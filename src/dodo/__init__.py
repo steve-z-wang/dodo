@@ -24,6 +24,7 @@ from .result import Result, Verdict
 from .run import Run, TaskResult, TaskStatus
 from .llm import LLM, Message, Content, TextContent, ImageContent
 from .prompts import DEFAULT_SYSTEM_PROMPT
+from .memory import MemoryConfig
 
 __version__ = "0.1.0"
 
@@ -32,6 +33,7 @@ __all__ = [
     "Agent",
     "Tool",
     "TaskAbortedError",
+    "MemoryConfig",
     # Results
     "Result",
     "Verdict",

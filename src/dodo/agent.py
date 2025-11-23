@@ -12,6 +12,7 @@ from dodo.run import Run, TaskStatus
 from dodo.result import Result, Verdict
 from dodo.prompts import DEFAULT_SYSTEM_PROMPT
 from dodo.exceptions import TaskAbortedError
+from dodo.memory import MemoryConfig
 
 
 
@@ -40,6 +41,7 @@ class Agent:
         observe: Callable[[], Awaitable[List[Content]]],
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         stateful: bool = True,
+        memory: Optional[MemoryConfig] = None,
     ):
         """Initialize agent.
 
@@ -49,12 +51,14 @@ class Agent:
             observe: Async callback that returns current context as Content list
             system_prompt: System prompt for the agent
             stateful: If True, maintain conversation history between calls (default: True)
+            memory: Memory configuration for history management (default: MemoryConfig())
         """
         self.llm = llm
         self.tools = tools
         self.observe = observe
         self.system_prompt = system_prompt
         self.stateful = stateful
+        self.memory = memory or MemoryConfig()
         self.logger = logging.getLogger(__name__)
 
         # Store previous runs if stateful=True
@@ -200,6 +204,7 @@ class Agent:
             tools=self.tools,
             observe=self.observe,
             system_prompt=self.system_prompt,
+            memory=self.memory,
         )
 
         run = await task_runner.run(

@@ -18,6 +18,7 @@ from dodo.tool_registry import ToolRegistry
 from dodo.run import Run, TaskResult, TaskStatus
 from dodo.tools import CompleteWorkTool, AbortWorkTool
 from dodo.prompts import DEFAULT_SYSTEM_PROMPT
+from dodo.memory import MemoryConfig
 
 if TYPE_CHECKING:
     from dodo.llm import LLM
@@ -39,6 +40,7 @@ class TaskRunner:
         tools: List[Tool],
         observe: Callable[[], Awaitable[List[Content]]],
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
+        memory: Optional[MemoryConfig] = None,
     ):
         """Initialize TaskRunner.
 
@@ -47,11 +49,13 @@ class TaskRunner:
             tools: List of domain tools (e.g., browser tools, API tools)
             observe: Async callback that returns current context as Content list
             system_prompt: System prompt for the agent
+            memory: Memory configuration for history management
         """
         self._llm = llm
         self._tools = tools
         self._observe = observe
         self._system_prompt = system_prompt
+        self._memory = memory or MemoryConfig()
         self._logger = logging.getLogger(__name__)
 
     async def run(
@@ -232,13 +236,13 @@ class TaskRunner:
         self, session_start_messages: List[Message], pairs: List[MessagePair]
     ) -> List[Message]:
         """Prepare messages for LLM call with history management."""
-        keep_last_n_pairs = 5
+        recent_window = self._memory.recent_window
 
         tool_messages: List[Message] = []
 
         # If many pairs, summarize old ones
-        if len(pairs) > keep_last_n_pairs:
-            old_pairs = pairs[:-keep_last_n_pairs]
+        if len(pairs) > recent_window:
+            old_pairs = pairs[:-recent_window]
             summary = self._build_summary(old_pairs)
             if summary:
                 tool_messages.append(
@@ -253,7 +257,7 @@ class TaskRunner:
 
         # Add recent pairs
         recent_pairs = (
-            pairs[-keep_last_n_pairs:] if len(pairs) > keep_last_n_pairs else pairs
+            pairs[-recent_window:] if len(pairs) > recent_window else pairs
         )
         for assistant_msg, tool_result_msg in recent_pairs:
             tool_messages.append(assistant_msg)

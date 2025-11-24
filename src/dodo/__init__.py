@@ -1,11 +1,10 @@
 """DoDo - A stateful agentic framework.
 
 DoDo provides a simple, generic framework for building stateful AI agents
-that can perform tasks, retrieve information, and verify conditions.
+that can perform tasks and verify conditions.
 
-Three simple methods:
-- do(task) - Do a task (simple or complex)
-- tell(what) - Tell me something (retrieve information)
+Two simple methods:
+- do(task, output_schema) - Do a task (simple or complex), optionally return structured output
 - verify(condition) - Verify if something is true
 
 Example:
@@ -16,7 +15,6 @@ Example:
     >>> print(run.output)      # Structured output
     >>> print(run.feedback)    # Brief summary
     >>> print(run.action_log)  # Detailed execution trace
-    >>> value = await agent.tell("some information")
     >>> verdict = await agent.verify("some condition is true")
 """
 

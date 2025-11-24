@@ -29,7 +29,6 @@ class Agent:
         >>> print(run.output)      # Structured output
         >>> print(run.feedback)    # Brief summary
         >>> print(run.action_log)  # Detailed trace
-        >>> value = await agent.tell("some information")
         >>> verdict = await agent.verify("some condition")
     """
 
@@ -116,49 +115,6 @@ class Agent:
         """
         redo_runner = RedoRunner(self.tools, self.observe)
         await redo_runner.replay(run)
-
-    async def tell(
-        self,
-        what: str,
-        schema: Optional[Type[BaseModel]] = None,
-        max_iterations: int = 10,
-    ) -> Any:
-        """Tell me something.
-
-        Retrieve information from the current context. Returns the value directly.
-
-        Args:
-            what: What to retrieve in natural language (e.g., "the total price")
-            schema: Optional Pydantic model for structured output
-            max_iterations: Maximum iterations (default: 10)
-
-        Returns:
-            The requested information (str if no schema, otherwise schema instance)
-
-        Raises:
-            TaskAbortedError: If retrieval fails
-        """
-
-        # Default to str schema if none provided
-        class StrOutput(BaseModel):
-            """String output."""
-
-            value: str = Field(description=f"The requested information: {what}")
-
-        effective_schema = schema or StrOutput
-        task = f"Find and return the following information: {what}"
-
-        run = await self._run_task(
-            task=task,
-            max_iterations=max_iterations,
-            output_schema=effective_schema,
-        )
-
-        # Return value directly
-        if schema:
-            return run.output
-        else:
-            return run.output.value if run.output else ""
 
     async def verify(
         self,

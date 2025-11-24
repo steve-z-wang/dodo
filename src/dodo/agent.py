@@ -6,13 +6,11 @@ from typing import Awaitable, Callable, List, Optional, Type, Any
 from pydantic import BaseModel, Field
 
 from dodo.llm import LLM, Content
-from dodo.tool import Tool
-from dodo.task_runner import TaskRunner
-from dodo.run import Run, TaskStatus
+from dodo.tools import Tool
+from dodo.runner import TaskRunner, Run, TaskStatus, MemoryConfig
 from dodo.result import Result, Verdict
 from dodo.prompts import DEFAULT_SYSTEM_PROMPT
 from dodo.exceptions import TaskAbortedError
-from dodo.memory import MemoryConfig
 
 
 

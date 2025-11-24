@@ -8,7 +8,7 @@ from .message import (
     UserMessage,
     ModelMessage,
 )
-from dodo.content import (
+from .content import (
     Content,
     Text,
     Image,

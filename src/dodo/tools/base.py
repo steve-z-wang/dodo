@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
 
-from dodo.content import ToolResult, ToolResultStatus
+from dodo.llm.content import ToolResult, ToolResultStatus
 
 
 class Tool(ABC):

@@ -3,11 +3,11 @@
 from typing import Any, Optional, Type, TYPE_CHECKING
 from pydantic import BaseModel, Field, create_model
 
-from dodo.tool import Tool
-from dodo.content import ToolResult, ToolResultStatus
+from .base import Tool
+from dodo.llm.content import ToolResult, ToolResultStatus
 
 if TYPE_CHECKING:
-    from dodo.run import TaskResult
+    from dodo.runner.run import TaskResult
 
 
 class CompleteWorkTool(Tool):
@@ -39,7 +39,7 @@ class CompleteWorkTool(Tool):
             task_result: TaskResult object to store completion status
             output_schema: Optional Pydantic model for structured output
         """
-        from dodo.run import TaskStatus
+        from dodo.runner.run import TaskStatus
 
         self.task_result = task_result
         self._TaskStatus = TaskStatus
@@ -98,7 +98,7 @@ class AbortWorkTool(Tool):
 
     def __init__(self, task_result: "TaskResult"):
         """Initialize with reference to task result."""
-        from dodo.run import TaskStatus
+        from dodo.runner.run import TaskStatus
 
         self.task_result = task_result
         self._TaskStatus = TaskStatus

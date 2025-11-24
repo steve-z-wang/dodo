@@ -3,9 +3,9 @@
 import logging
 from typing import Dict, List
 
-from dodo.tool import Tool
+from .base import Tool
 from dodo.llm.message import ToolCall
-from dodo.content import ToolResult, ToolResultStatus
+from dodo.llm.content import ToolResult, ToolResultStatus
 
 
 class ToolRegistry:

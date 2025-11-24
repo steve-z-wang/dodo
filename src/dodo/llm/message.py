@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from dodo.content import Content, Text, Image, ToolResult, ToolResultStatus
+from .content import Content, Text, Image, ToolResult, ToolResultStatus
 
 
 class ToolCall(BaseModel):

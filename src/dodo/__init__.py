@@ -19,22 +19,22 @@ Example:
 
 from .agent import Agent
 from .exceptions import TaskAbortedError
-from .tool import Tool
+from .tools import Tool
+from .runner import Run, TaskResult, TaskStatus, MemoryConfig
 from .result import Result, Verdict
-from .run import Run, TaskResult, TaskStatus
 from .llm import (
     LLM,
     Message,
     Content,
-    TextContent,
-    ImageContent,
-    ToolResultContent,
+    Text,
+    Image,
+    ToolResult,
+    ToolResultStatus,
     SystemMessage,
     UserMessage,
     ModelMessage,
 )
 from .prompts import DEFAULT_SYSTEM_PROMPT
-from .memory import MemoryConfig
 
 __version__ = "0.1.0"
 
@@ -53,12 +53,13 @@ __all__ = [
     # LLM
     "LLM",
     # Content types
-    "Message",
     "Content",
-    "TextContent",
-    "ImageContent",
-    "ToolResultContent",
-    # Message types (3 only: System, User, Model)
+    "Text",
+    "Image",
+    "ToolResult",
+    "ToolResultStatus",
+    # Message types
+    "Message",
     "SystemMessage",
     "UserMessage",
     "ModelMessage",

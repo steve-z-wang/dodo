@@ -12,7 +12,7 @@ pip install dodoai
 pip install dodoai[gemini]  # With Gemini support
 ```
 
-## Quick Start
+## Overview
 
 ```python
 from dodo import Agent, Gemini

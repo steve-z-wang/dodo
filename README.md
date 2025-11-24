@@ -1,6 +1,6 @@
 # dodo
 
-[![PyPI version](https://img.shields.io/pypi/v/dodo-agent.svg)](https://pypi.org/project/dodo-agent/)
+[![PyPI version](https://img.shields.io/pypi/v/dodoai.svg)](https://pypi.org/project/dodoai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A stateful agentic framework for building AI agents.
@@ -8,8 +8,8 @@ A stateful agentic framework for building AI agents.
 ## Installation
 
 ```bash
-pip install dodo-agent
-pip install dodo-agent[gemini]  # With Gemini support
+pip install dodoai
+pip install dodoai[gemini]  # With Gemini support
 ```
 
 ## Quick Start

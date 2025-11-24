@@ -132,9 +132,9 @@ class Agent:
 
         # Return value directly
         if schema:
-            return run.result.output
+            return run.output
         else:
-            return run.result.output.value if run.result.output else ""
+            return run.output.value if run.output else ""
 
     async def check(
         self,
@@ -171,12 +171,12 @@ class Agent:
             output_schema=CheckResult,
         )
 
-        if not run.result.output:
+        if not run.output:
             raise RuntimeError("Check failed: no structured output received")
 
         return Verdict(
-            passed=run.result.output.passed,
-            reason=run.result.feedback or "",
+            passed=run.output.passed,
+            reason=run.feedback or "",
         )
 
     async def _run_task(
@@ -218,8 +218,8 @@ class Agent:
             self._previous_runs.append(run)
 
         # Raise if aborted
-        if run.result.status == TaskStatus.ABORTED:
-            raise TaskAbortedError(run.result.feedback or "Task aborted")
+        if run._result.status == TaskStatus.ABORTED:
+            raise TaskAbortedError(run.feedback or "Task aborted")
 
         return run
 

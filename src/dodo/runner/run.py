@@ -39,21 +39,22 @@ class TaskResult:
 
 @dataclass
 class Run:
-    """Task execution run - full execution history with embedded result.
+    """Task execution run - full execution history.
 
     Captures everything about a single task execution:
     - The task description
-    - The result (status, output, feedback)
     - Action log (detailed execution trace)
     - Full message history
     - Step counts
 
-    Convenience properties provide direct access to result fields:
-    - run.output -> run.result.output
-    - run.feedback -> run.result.feedback
+    Public API:
+    - run.output - Structured output (if schema provided)
+    - run.feedback - Brief summary of what was accomplished
+    - run.action_log - Detailed execution trace
+    - run.messages - Full conversation history
     """
 
-    result: TaskResult
+    _result: TaskResult
     action_log: str
     messages: List = field(default_factory=list)
 
@@ -63,14 +64,14 @@ class Run:
 
     @property
     def output(self) -> Optional[Any]:
-        """Convenience property to access result.output."""
-        return self.result.output
+        """Structured output if output_schema was provided."""
+        return self._result.output
 
     @property
     def feedback(self) -> Optional[str]:
-        """Convenience property to access result.feedback."""
-        return self.result.feedback
+        """Brief summary of what was accomplished."""
+        return self._result.feedback
 
     def __str__(self) -> str:
-        status = self.result.status.value if self.result.status else "pending"
+        status = self._result.status.value if self._result.status else "pending"
         return f"Run(task='{self.task_description}', steps={self.steps_used}/{self.max_steps}, status={status})"

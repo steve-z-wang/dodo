@@ -137,7 +137,7 @@ class TaskRunner:
             messages.append(response_msg)
 
         return Run(
-            result=result,
+            _result=result,
             action_log=action_log,
             messages=messages,
             task_description=task,
@@ -193,9 +193,9 @@ class TaskRunner:
         for i, run in enumerate(runs, 1):
             lines.append(f"### Task {i}")
             lines.append(f"Task: {run.task_description}")
-            lines.append(f"Status: {run.result.status.value.capitalize()}")
-            if run.result.feedback:
-                lines.append(f"Feedback: {run.result.feedback}")
+            lines.append(f"Status: {run._result.status.value.capitalize()}")
+            if run.feedback:
+                lines.append(f"Feedback: {run.feedback}")
             lines.append("")
         return "\n".join(lines)
 

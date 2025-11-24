@@ -68,11 +68,17 @@ def _parse_docstring(docstring: Optional[str]) -> tuple[Optional[str], Dict[str,
     Returns:
         Tuple of (description, {param_name: param_description})
     """
+    import warnings
+
     if not docstring:
         return None, {}
 
-    parsed = Docstring(docstring, parser="google")
-    parsed.parse()
+    # Suppress griffe warnings about missing type annotations in docstrings
+    # Type annotations are taken from function signature, not docstring
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="No type or annotation")
+        parsed = Docstring(docstring, parser="google")
+        parsed.parse()
 
     description = None
     param_descriptions = {}

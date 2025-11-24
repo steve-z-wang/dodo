@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
 
-from dodo.llm.message import ToolResultContent
+from dodo.content import ToolResult, ToolResultStatus
 
 
 class Tool(ABC):
@@ -13,7 +13,7 @@ class Tool(ABC):
     - name: str - Unique tool identifier
     - description: str - What the tool does (shown to LLM)
     - Params: BaseModel - Nested Pydantic model for parameters
-    - async execute(params: Params) -> ToolResultContent
+    - async execute(params: Params) -> ToolResult
 
     Example:
         class GreetTool(Tool):
@@ -23,9 +23,9 @@ class Tool(ABC):
             class Params(BaseModel):
                 name: str = Field(description="Name of person to greet")
 
-            async def execute(self, params: Params) -> ToolResultContent:
+            async def execute(self, params: Params) -> ToolResult:
                 greeting = f"Hello, {params.name}!"
-                return ToolResultContent(
+                return ToolResult(
                     name=self.name,
                     status=ToolResultStatus.SUCCESS,
                     description=greeting,
@@ -37,13 +37,13 @@ class Tool(ABC):
     Params: type[BaseModel]
 
     @abstractmethod
-    async def execute(self, params: BaseModel) -> ToolResultContent:
+    async def execute(self, params: BaseModel) -> ToolResult:
         """Execute the tool with validated parameters.
 
         Args:
             params: Validated Params instance
 
         Returns:
-            ToolResultContent with status, description, and optional terminal flag
+            ToolResult with status, description, and optional terminal flag
         """
         pass

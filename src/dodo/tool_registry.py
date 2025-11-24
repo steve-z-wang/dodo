@@ -4,7 +4,8 @@ import logging
 from typing import Dict, List
 
 from dodo.tool import Tool
-from dodo.llm.message import ToolCall, ToolResultContent, ToolResultStatus
+from dodo.llm.message import ToolCall
+from dodo.content import ToolResult, ToolResultStatus
 
 
 class ToolRegistry:
@@ -38,14 +39,14 @@ class ToolRegistry:
         """Clear all registered tools."""
         self._tools.clear()
 
-    async def execute_tool_calls(self, tool_calls: List[ToolCall]) -> List[ToolResultContent]:
+    async def execute_tool_calls(self, tool_calls: List[ToolCall]) -> List[ToolResult]:
         """Execute multiple tool calls, stopping on error or terminal tool.
 
         Args:
             tool_calls: List of tool calls from LLM
 
         Returns:
-            List of ToolResultContent (includes skipped results for remaining calls)
+            List of ToolResult (includes skipped results for remaining calls)
         """
         results = []
         executed_count = 0
@@ -58,7 +59,7 @@ class ToolRegistry:
                 except KeyError:
                     error_msg = f"Tool '{tool_call.name}' not found in registry"
                     self._logger.error(error_msg)
-                    result = ToolResultContent(
+                    result = ToolResult(
                         tool_call_id=tool_call.id,
                         name=tool_call.name,
                         status=ToolResultStatus.ERROR,
@@ -93,7 +94,7 @@ class ToolRegistry:
                 self._logger.error(
                     f"Tool execution failed: {tool_call.name} - {error_msg}"
                 )
-                result = ToolResultContent(
+                result = ToolResult(
                     tool_call_id=tool_call.id,
                     name=tool_call.name,
                     status=ToolResultStatus.ERROR,
@@ -106,7 +107,7 @@ class ToolRegistry:
 
         # Create skipped results for remaining tool calls
         for tool_call in tool_calls[executed_count:]:
-            result = ToolResultContent(
+            result = ToolResult(
                 tool_call_id=tool_call.id,
                 name=tool_call.name,
                 status=ToolResultStatus.SKIPPED,

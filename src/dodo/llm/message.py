@@ -1,54 +1,10 @@
 """Message types for conversational LLM history with tool calling support."""
 
 from typing import List, Optional, Dict, Any
-from enum import Enum
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-
-class ImageMimeType(str, Enum):
-    """Supported image MIME types."""
-
-    PNG = "image/png"
-    JPEG = "image/jpeg"
-    WEBP = "image/webp"
-    GIF = "image/gif"
-
-
-class ToolResultStatus(str, Enum):
-    """Tool execution result status."""
-
-    SUCCESS = "success"
-    ERROR = "error"
-    SKIPPED = "skipped"
-
-
-class Content(BaseModel):
-    """Base class for message content parts."""
-
-    tag: Optional[str] = None  # Tag for filtering (e.g., "observation", "context")
-    lifespan: Optional[int] = None  # How many iterations to keep this content (None = use recent_window)
-
-
-class TextContent(Content):
-    """Text content part."""
-
-    text: str
-
-    def __str__(self) -> str:
-        if len(self.text) > 100:
-            return f"TextContent({self.text[:100]}...)"
-        return f"TextContent({self.text})"
-
-
-class ImageContent(Content):
-    """Image content part (base64-encoded)."""
-
-    data: str  # base64-encoded
-    mime_type: ImageMimeType = ImageMimeType.PNG
-
-    def __str__(self) -> str:
-        return f"ImageContent(mime_type={self.mime_type.value}, size={len(self.data)} bytes)"
+from dodo.content import Content, Text, Image, ToolResult, ToolResultStatus
 
 
 class ToolCall(BaseModel):
@@ -63,25 +19,6 @@ class ToolCall(BaseModel):
         if len(args_str) > 100:
             args_str = args_str[:100] + "..."
         return f"ToolCall({self.name}, {args_str})"
-
-
-class ToolResultContent(Content):
-    """Result of tool execution - can be included in UserMessage content."""
-
-    tool_call_id: Optional[str] = None  # Match by ID if available
-    name: str  # Tool name
-    status: ToolResultStatus  # Execution status
-    error: Optional[str] = None  # Error message if status is ERROR
-    description: str = ""  # Human-readable description of action taken
-    terminal: bool = False  # If True, task should stop after this tool
-
-    def __str__(self) -> str:
-        parts = [f"{self.name}: {self.status.value}"]
-        if self.error:
-            parts.append(f"error={self.error}")
-        if self.terminal:
-            parts.append("terminal")
-        return f"ToolResultContent({', '.join(parts)})"
 
 
 
@@ -113,9 +50,9 @@ class UserMessage(Message):
         if not self.content:
             return "UserMessage(empty)"
         text_parts = [
-            part.text for part in self.content if isinstance(part, TextContent)
+            part.text for part in self.content if isinstance(part, Text)
         ]
-        image_count = sum(1 for part in self.content if isinstance(part, ImageContent))
+        image_count = sum(1 for part in self.content if isinstance(part, Image))
 
         text_str = " ".join(text_parts)
         if len(text_str) > 200:
@@ -136,10 +73,10 @@ class ModelMessage(Message):
 
         if self.content:
             text_parts = [
-                part.text for part in self.content if isinstance(part, TextContent)
+                part.text for part in self.content if isinstance(part, Text)
             ]
             image_count = sum(
-                1 for part in self.content if isinstance(part, ImageContent)
+                1 for part in self.content if isinstance(part, Image)
             )
 
             if text_parts:

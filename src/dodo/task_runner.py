@@ -9,10 +9,8 @@ from dodo.llm import (
     SystemMessage,
     UserMessage,
     ModelMessage,
-    Content,
-    TextContent,
-    ToolResultContent,
 )
+from dodo.content import Content, Text, ToolResult
 from dodo.tool import Tool
 from dodo.tool_registry import ToolRegistry
 from dodo.run import Run, TaskResult, TaskStatus
@@ -179,16 +177,16 @@ class TaskRunner:
         # Add previous runs if provided (for stateful agents)
         if previous_runs:
             formatted = self._format_previous_runs(previous_runs)
-            user_content.append(TextContent(text=formatted))
+            user_content.append(Text(text=formatted))
 
-        user_content.append(TextContent(text=f"## Current task:\n{task}"))
+        user_content.append(Text(text=f"## Current task:\n{task}"))
 
         # Add initial observation via observe callback
         observation = await self._observe()
         user_content.extend(observation)
 
         return [
-            SystemMessage(content=[TextContent(text=self._system_prompt)]),
+            SystemMessage(content=[Text(text=self._system_prompt)]),
             UserMessage(content=user_content),
         ]
 
@@ -226,7 +224,7 @@ class TaskRunner:
             # Extract tool results from response message content
             if response_msg.content:
                 for content in response_msg.content:
-                    if isinstance(content, ToolResultContent):
+                    if isinstance(content, ToolResult):
                         if content.status.value == "error":
                             lines.append(f"  - {content.description} [FAILED: {content.error}]")
                         else:
@@ -250,7 +248,7 @@ class TaskRunner:
                 tool_messages.append(
                     UserMessage(
                         content=[
-                            TextContent(
+                            Text(
                                 text=f"Previous actions in this session:\n{summary}"
                             )
                         ]

@@ -3,28 +3,30 @@
 from .llm import LLM
 from .message import (
     Message,
-    Content,
-    TextContent,
-    ImageContent,
-    ToolResultContent,
     ToolCall,
-    ToolResultStatus,
     SystemMessage,
     UserMessage,
     ModelMessage,
+)
+from dodo.content import (
+    Content,
+    Text,
+    Image,
+    ToolResult,
+    ToolResultStatus,
 )
 
 __all__ = [
     "LLM",
     # Content types
-    "Message",
     "Content",
-    "TextContent",
-    "ImageContent",
-    "ToolResultContent",
-    "ToolCall",
+    "Text",
+    "Image",
+    "ToolResult",
     "ToolResultStatus",
-    # Message types (3 only)
+    # Message types
+    "Message",
+    "ToolCall",
     "SystemMessage",
     "UserMessage",
     "ModelMessage",

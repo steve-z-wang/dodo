@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/dodoai.svg)](https://pypi.org/project/dodoai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A stateful agentic framework for building AI agents.
+Lightweight agent framework with tools and memory.
 
 ## Installation
 

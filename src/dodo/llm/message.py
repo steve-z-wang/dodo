@@ -20,6 +20,7 @@ class ToolResultStatus(str, Enum):
 
     SUCCESS = "success"
     ERROR = "error"
+    SKIPPED = "skipped"
 
 
 class Content(BaseModel):

@@ -109,8 +109,7 @@ class ToolRegistry:
             result = ToolResultContent(
                 tool_call_id=tool_call.id,
                 name=tool_call.name,
-                status=ToolResultStatus.ERROR,
-                error="Skipped due to previous tool failure or terminal action",
+                status=ToolResultStatus.SKIPPED,
                 description=f"{tool_call.name} (SKIPPED)",
             )
             results.append(result)

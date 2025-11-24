@@ -19,7 +19,7 @@ Example:
 
 from .agent import Agent
 from .exceptions import TaskAbortedError
-from .tools import Tool
+from .tools import Tool, tool
 from .runner import Run, TaskResult, TaskStatus, MemoryConfig
 from .result import Result, Verdict
 from .llm import (
@@ -43,6 +43,7 @@ __all__ = [
     # Core
     "Agent",
     "Tool",
+    "tool",
     "TaskAbortedError",
     "MemoryConfig",
     # Results

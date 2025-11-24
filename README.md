@@ -15,9 +15,18 @@ pip install dodoai[gemini]  # With Gemini support
 ## Quick Start
 
 ```python
-from dodo import Agent, Gemini
+from dodo import Agent, Gemini, tool
 
-agent = Agent(llm=Gemini(), tools=[Calculator()], observe=lambda: [])
+@tool
+async def calculator(expression: str) -> str:
+    """Calculate a math expression.
+
+    Args:
+        expression: Math expression to evaluate
+    """
+    return str(eval(expression))
+
+agent = Agent(llm=Gemini(), tools=[calculator], observe=lambda: [])
 
 await agent.do("calculate 25 * 4 + 10")
 result = await agent.tell("the result")
@@ -59,24 +68,37 @@ else:
 
 **1. Create tools**
 
+Simple tools using `@tool` decorator:
+
 ```python
-from dodo import Tool, ToolResult, ToolResultStatus
-from pydantic import BaseModel, Field
+from dodo import tool
 
-class CalculatorTool(Tool):
-    name = "calculator"
-    description = "Perform arithmetic calculations"
+@tool
+async def calculator(expression: str) -> str:
+    """Perform arithmetic calculations.
 
-    class Params(BaseModel):
-        expression: str = Field(description="Math expression to evaluate")
+    Args:
+        expression: Math expression to evaluate
+    """
+    return str(eval(expression))
+```
 
-    async def execute(self, params):
-        result = eval(params.expression)
-        return ToolResult(
-            name=self.name,
-            status=ToolResultStatus.SUCCESS,
-            description=f"Result: {result}",
-        )
+Tools with dependencies using classes:
+
+```python
+@tool
+class SearchTool:
+    """Search the database."""
+
+    def __init__(self, database):
+        self.database = database
+
+    async def run(self, query: str) -> str:
+        """
+        Args:
+            query: Search query
+        """
+        return self.database.search(query)
 ```
 
 **2. Define observation function**
@@ -92,7 +114,7 @@ async def observe():
 ```python
 from dodo import Agent, Gemini
 
-agent = Agent(llm=Gemini(), tools=[CalculatorTool()], observe=observe)
+agent = Agent(llm=Gemini(), tools=[calculator], observe=observe)
 
 await agent.do("calculate 25 * 4 + 10")            # Do a task
 result = await agent.tell("the last calculation")  # Get information

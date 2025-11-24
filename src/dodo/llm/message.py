@@ -26,6 +26,7 @@ class Content(BaseModel):
     """Base class for message content parts."""
 
     tag: Optional[str] = None  # Tag for filtering (e.g., "observation", "context")
+    lifespan: Optional[int] = None  # How many iterations to keep this content (None = use recent_window)
 
 
 class TextContent(Content):

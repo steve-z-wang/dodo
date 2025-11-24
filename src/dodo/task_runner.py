@@ -255,15 +255,57 @@ class TaskRunner:
                     )
                 )
 
-        # Add recent pairs
+        # Add recent pairs with content filtering based on lifespan
         recent_pairs = (
             pairs[-recent_window:] if len(pairs) > recent_window else pairs
         )
-        for assistant_msg, tool_result_msg in recent_pairs:
+        num_recent = len(recent_pairs)
+
+        for idx, (assistant_msg, tool_result_msg) in enumerate(recent_pairs):
             tool_messages.append(assistant_msg)
-            tool_messages.append(tool_result_msg)
+
+            # Filter content based on lifespan
+            # idx=0 is oldest in recent_pairs, idx=num_recent-1 is newest
+            # distance_from_end: 0 = current iteration, 1 = previous, etc.
+            distance_from_end = num_recent - 1 - idx
+            filtered_msg = self._filter_content_by_lifespan(
+                tool_result_msg, distance_from_end
+            )
+            tool_messages.append(filtered_msg)
 
         return session_start_messages + tool_messages
+
+    def _filter_content_by_lifespan(
+        self, msg: ToolResultMessage, distance_from_end: int
+    ) -> ToolResultMessage:
+        """Filter content based on lifespan.
+
+        Args:
+            msg: ToolResultMessage to filter
+            distance_from_end: 0 = current iteration, 1 = previous, etc.
+
+        Returns:
+            New ToolResultMessage with filtered content
+        """
+        if not msg.content:
+            return msg
+
+        filtered_content = []
+        for content in msg.content:
+            # If no lifespan set, keep the content
+            if content.lifespan is None:
+                filtered_content.append(content)
+            # If within lifespan, keep it
+            elif distance_from_end < content.lifespan:
+                filtered_content.append(content)
+            # Otherwise, skip (content is too old for its lifespan)
+
+        # Return new message with filtered content
+        return ToolResultMessage(
+            timestamp=msg.timestamp,
+            results=msg.results,
+            content=filtered_content if filtered_content else None,
+        )
 
     def _extract_reasoning(self, assistant_msg: AssistantMessage) -> Optional[str]:
         """Extract text reasoning from assistant message."""

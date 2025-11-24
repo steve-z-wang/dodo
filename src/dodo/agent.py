@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from dodo.llm import LLM, Content
 from dodo.tools import Tool
-from dodo.runner import TaskRunner, Run, TaskStatus, MemoryConfig
+from dodo.runner import TaskRunner, RedoRunner, Run, TaskStatus, MemoryConfig
 from dodo.result import Verdict
 from dodo.prompts import DEFAULT_SYSTEM_PROMPT
 from dodo.exceptions import TaskAbortedError
@@ -92,6 +92,30 @@ class Agent:
         )
 
         return run
+
+    async def redo(self, run: Run) -> None:
+        """Redo a previous run.
+
+        Replays the exact sequence of tool calls from a previous run without
+        any LLM reasoning. This is much faster and cheaper than do() but less
+        flexible - it will fail if the page/state has changed.
+
+        Use verify() afterwards to check if the replay succeeded:
+            >>> await agent.redo(run)
+            >>> verdict = await agent.verify("cart has 2 items")
+            >>> if not verdict.passed:
+            ...     # Fall back to intelligent do()
+            ...     await agent.do("Add 2 items to cart")
+
+        Args:
+            run: Previous run to replay
+
+        Raises:
+            ValueError: If a tool from the run is not available
+            Exception: If any tool execution fails
+        """
+        redo_runner = RedoRunner(self.tools, self.observe)
+        await redo_runner.replay(run)
 
     async def tell(
         self,

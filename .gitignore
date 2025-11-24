@@ -35,5 +35,8 @@ env/
 .coverage
 htmlcov/
 
+# Environment
+.env
+
 # OS
 .DS_Store

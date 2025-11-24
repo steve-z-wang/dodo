@@ -12,16 +12,21 @@ from .content import (
     Content,
     Text,
     Image,
+    ImageMimeType,
     ToolResult,
     ToolResultStatus,
 )
+from .providers import Gemini
 
 __all__ = [
     "LLM",
+    # Providers
+    "Gemini",
     # Content types
     "Content",
     "Text",
     "Image",
+    "ImageMimeType",
     "ToolResult",
     "ToolResultStatus",
     # Message types

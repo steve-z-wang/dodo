@@ -24,6 +24,7 @@ from .runner import Run, TaskResult, TaskStatus, MemoryConfig
 from .result import Result, Verdict
 from .llm import (
     LLM,
+    Gemini,
     Message,
     Content,
     Text,
@@ -52,6 +53,7 @@ __all__ = [
     "TaskStatus",
     # LLM
     "LLM",
+    "Gemini",
     # Content types
     "Content",
     "Text",

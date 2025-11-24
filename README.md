@@ -17,67 +17,93 @@ pip install dodoai[gemini]  # With Gemini support
 ```python
 from dodo import Agent, Gemini
 
-agent = Agent(llm=Gemini(), tools=[...], observe=my_observe_fn)
+agent = Agent(llm=Gemini(), tools=[Calculator()], observe=lambda: [])
 
-await agent.do("perform some task")
-value = await agent.tell("some information")
-ok = await agent.check("some condition is true")
+await agent.do("calculate 25 * 4 + 10")
+result = await agent.tell("the result")
+ok = await agent.check("result is greater than 100")
 ```
 
 ## Features
-
-**Three simple methods**
-
-```python
-await agent.do("fill out the form and submit")     # Do a task
-username = await agent.tell("the logged in user")  # Get information
-ok = await agent.check("user is logged in")        # Check a condition
-```
 
 **Stateful agents**
 
 ```python
 # Agent remembers context across tasks
-await agent.do("go to amazon.com")
-await agent.do("search for laptop")
-await agent.do("add first result to cart")
+await agent.do("calculate 25 * 4")
+await agent.do("add 10 to the result")
+await agent.do("multiply by 2")
 ```
 
 **Structured output**
 
 ```python
-class ProductInfo(BaseModel):
-    name: str
-    price: float
+class Result(BaseModel):
+    value: float
+    expression: str
 
-product = await agent.tell("product information", schema=ProductInfo)
+result = await agent.tell("the calculation result", schema=Result)
 ```
 
 **Verdicts with reasons**
 
 ```python
-ok = await agent.check("cart has 3 items")
+ok = await agent.check("result is greater than 100")
 if ok:
     print("Success!")
 else:
     print(f"Failed: {ok.reason}")
 ```
 
-**Observation function**
+## Usage
+
+**1. Create tools**
+
+```python
+from dodo import Tool, ToolResult, ToolResultStatus
+from pydantic import BaseModel, Field
+
+class CalculatorTool(Tool):
+    name = "calculator"
+    description = "Perform arithmetic calculations"
+
+    class Params(BaseModel):
+        expression: str = Field(description="Math expression to evaluate")
+
+    async def execute(self, params):
+        result = eval(params.expression)
+        return ToolResult(
+            name=self.name,
+            status=ToolResultStatus.SUCCESS,
+            description=f"Result: {result}",
+        )
+```
+
+**2. Define observation function**
 
 ```python
 async def observe():
     """Return current environment state."""
-    return [Text(text="Current page: checkout")]
-
-agent = Agent(llm=llm, tools=tools, observe=observe)
+    return [Text(text=f"Memory: {memory}")]
 ```
 
-**Error handling**
+**3. Create agent and run tasks**
+
+```python
+from dodo import Agent, Gemini
+
+agent = Agent(llm=Gemini(), tools=[CalculatorTool()], observe=observe)
+
+await agent.do("calculate 25 * 4 + 10")            # Do a task
+result = await agent.tell("the last calculation")  # Get information
+ok = await agent.check("result is greater than 100")  # Check a condition
+```
+
+**4. Error handling**
 
 ```python
 try:
-    await agent.do("complete checkout")
+    await agent.do("divide 10 by 0")
 except TaskAbortedError as e:
     print(f"Task failed: {e}")
 ```
@@ -91,26 +117,15 @@ Gemini(model="gemini-2.5-flash")  # Default
 Gemini(model="gemini-2.5-pro")    # Pro model
 ```
 
-## Creating Tools
+You can also implement your own LLM by extending the `LLM` base class:
 
 ```python
-from dodo import Tool, ToolResult, ToolResultStatus
-from pydantic import BaseModel, Field
+from dodo import LLM
 
-class SearchTool(Tool):
-    name = "search"
-    description = "Search for information"
-
-    class Params(BaseModel):
-        query: str = Field(description="Search query")
-
-    async def execute(self, params):
-        results = do_search(params.query)
-        return ToolResult(
-            name=self.name,
-            status=ToolResultStatus.SUCCESS,
-            description=f"Found {len(results)} results",
-        )
+class MyLLM(LLM):
+    async def call_tools(self, messages, tools):
+        # Your LLM API call here
+        pass
 ```
 
 ## License

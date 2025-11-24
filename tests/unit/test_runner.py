@@ -96,8 +96,8 @@ async def test_runner_completes_task():
 
     run = await runner.run(task="Do something", max_iterations=10)
 
-    assert run.result.status == TaskStatus.COMPLETED
-    assert run.result.feedback == "Task done successfully"
+    assert run._result.status == TaskStatus.COMPLETED
+    assert run._result.feedback == "Task done successfully"
     assert run.steps_used == 1
 
 
@@ -127,8 +127,8 @@ async def test_runner_aborts_task():
 
     run = await runner.run(task="Do impossible thing", max_iterations=10)
 
-    assert run.result.status == TaskStatus.ABORTED
-    assert run.result.feedback == "Impossible task"
+    assert run._result.status == TaskStatus.ABORTED
+    assert run._result.feedback == "Impossible task"
     assert run.steps_used == 1
 
 
@@ -156,8 +156,8 @@ async def test_runner_max_iterations():
 
     run = await runner.run(task="Keep adding", max_iterations=3)
 
-    assert run.result.status == TaskStatus.ABORTED
-    assert run.result.feedback == "Reached maximum iterations"
+    assert run._result.status == TaskStatus.ABORTED
+    assert run._result.feedback == "Reached maximum iterations"
     assert run.steps_used == 3
 
 
@@ -193,7 +193,7 @@ async def test_runner_uses_tools():
 
     run = await runner.run(task="Add 5 and 3", max_iterations=10)
 
-    assert run.result.status == TaskStatus.COMPLETED
+    assert run._result.status == TaskStatus.COMPLETED
     assert run.steps_used == 2
     assert llm.call_count == 2
 
@@ -275,8 +275,8 @@ async def test_runner_with_output_schema():
         output_schema=OutputData,
     )
 
-    assert run.result.status == TaskStatus.COMPLETED
-    assert run.result.output.value == 42
+    assert run._result.status == TaskStatus.COMPLETED
+    assert run._result.output.value == 42
 
 
 @pytest.mark.asyncio
@@ -316,7 +316,7 @@ async def test_runner_memory_compacting():
 
     run = await runner.run(task="Do 5 iterations", max_iterations=10)
 
-    assert run.result.status == TaskStatus.COMPLETED
+    assert run._result.status == TaskStatus.COMPLETED
     assert run.steps_used == 5
 
     # Check the last LLM call (iteration 5)
@@ -390,7 +390,7 @@ async def test_runner_content_lifespan():
 
     run = await runner.run(task="Test lifespan", max_iterations=10)
 
-    assert run.result.status == TaskStatus.COMPLETED
+    assert run._result.status == TaskStatus.COMPLETED
     assert run.steps_used == 3
 
     # Check iteration 3's messages (last LLM call)

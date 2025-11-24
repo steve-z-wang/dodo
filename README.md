@@ -15,22 +15,16 @@ pip install dodoai[gemini]  # With Gemini support
 ## Quick Start
 
 ```python
-from dodo import Agent, Gemini, tool
+from dodo import Agent, Gemini
 
-@tool
-async def calculator(expression: str) -> str:
-    """Calculate a math expression.
+agent = Agent(llm=Gemini(), tools=[add_todo, complete_todo])
 
-    Args:
-        expression: Math expression to evaluate
-    """
-    return str(eval(expression))
+await agent.do("add buy milk to my list")
+await agent.do("mark buy milk as done")
 
-agent = Agent(llm=Gemini(), tools=[calculator], observe=lambda: [])
-
-await agent.do("calculate 25 * 4 + 10")
-result = await agent.tell("the result")
-ok = await agent.check("result is greater than 100")
+ok = await agent.check("all tasks are completed")
+if ok:
+    print("Success!")
 ```
 
 ## Features
@@ -44,9 +38,11 @@ await agent.do("add 10 to the result")
 await agent.do("multiply by 2")
 ```
 
-**Structured output**
+**Structured output** (using [Pydantic](https://docs.pydantic.dev/))
 
 ```python
+from pydantic import BaseModel
+
 class Result(BaseModel):
     value: float
     expression: str
@@ -105,8 +101,8 @@ class SearchTool:
 
 ```python
 async def observe():
-    """Return current environment state."""
-    return [Text(text=f"Memory: {memory}")]
+    """Return current environment state as a list of strings or Content objects."""
+    return [f"Current user: {username}", f"History: {history}"]
 ```
 
 **3. Create agent and run tasks**

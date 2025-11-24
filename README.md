@@ -1,131 +1,100 @@
-# DoDo
+# dodo
 
-A stateful agentic framework for building AI agents that can perform tasks, retrieve information, and verify conditions.
+[![PyPI version](https://img.shields.io/pypi/v/dodo-agent.svg)](https://pypi.org/project/dodo-agent/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
-
-- **Stateful**: Maintains conversation history across calls
-- **Simple API**: Three intuitive methods - `do`, `tell`, `check`
-- **Generic**: Works with any tools - web automation, APIs, file systems, etc.
-- **LLM Agnostic**: Bring your own LLM implementation
+A stateful agentic framework for building AI agents.
 
 ## Installation
 
 ```bash
 pip install dodo-agent
+pip install dodo-agent[gemini]  # With Gemini support
 ```
 
 ## Quick Start
 
 ```python
-from dodo import Agent, Tool, LLM
+from dodo import Agent, Gemini
 
-# Create your LLM implementation
-class MyLLM(LLM):
-    async def call_tools(self, messages, tools):
-        # Your LLM API call here
-        pass
+agent = Agent(llm=Gemini(), tools=[...], observe=my_observe_fn)
 
-# Create your tools
-class GreetTool(Tool):
-    name = "greet"
-    description = "Greet someone"
-
-    class Params(BaseModel):
-        name: str
-
-    async def execute(self, params):
-        return ToolResult(
-            name=self.name,
-            status=ToolResultStatus.SUCCESS,
-            description=f"Hello, {params.name}!",
-        )
-
-# Create an observe function that returns current context
-async def observe():
-    return [TextContent(text="Current state: ready")]
-
-# Create agent
-agent = Agent(
-    llm=MyLLM(),
-    tools=[GreetTool()],
-    observe=observe,
-)
-
-# Use the agent
-result = await agent.do("greet the user named Alice")
-print(result.feedback)
+await agent.do("perform some task")
+value = await agent.tell("some information")
+ok = await agent.check("some condition is true")
 ```
 
-## API
+## Features
 
-### `agent.do(task, max_iterations=20, output_schema=None)`
-
-Do a task. Can be simple (1-2 iterations) or complex (many iterations).
+**Three simple methods**
 
 ```python
-# Simple task
-result = await agent.do("click the login button")
-
-# Complex task
-result = await agent.do("fill out the registration form and submit")
-
-# With structured output
-class Price(BaseModel):
-    amount: float
-    currency: str
-
-result = await agent.do("find the total price", output_schema=Price)
-print(result.output.amount)
+await agent.do("fill out the form and submit")     # Do a task
+username = await agent.tell("the logged in user")  # Get information
+ok = await agent.check("user is logged in")        # Check a condition
 ```
 
-### `agent.tell(what, schema=None, max_iterations=10)`
-
-Tell me something. Returns the information directly.
+**Stateful agents**
 
 ```python
-# Simple retrieval
-username = await agent.tell("the logged in username")
-
-# With structured output
-class UserInfo(BaseModel):
-    name: str
-    email: str
-
-user = await agent.tell("the current user info", schema=UserInfo)
-print(user.name, user.email)
-```
-
-### `agent.check(condition, max_iterations=10)`
-
-Check if a condition is true. Returns a `Verdict`.
-
-```python
-ok = await agent.check("user is logged in")
-if ok:
-    print("User is logged in")
-else:
-    print(f"Not logged in: {ok.reason}")
-```
-
-## Stateful Conversations
-
-DoDo agents remember previous tasks:
-
-```python
+# Agent remembers context across tasks
 await agent.do("go to amazon.com")
-await agent.do("search for laptop")      # Remembers previous navigation
-await agent.do("add first result to cart")  # Knows search was done
-
-# Reset history if needed
-agent.reset()
+await agent.do("search for laptop")
+await agent.do("add first result to cart")
 ```
 
-## Creating Custom Tools
+**Structured output**
 
 ```python
-from dodo import Tool
-from dodo.llm import ToolResult, ToolResultStatus
+class ProductInfo(BaseModel):
+    name: str
+    price: float
+
+product = await agent.tell("product information", schema=ProductInfo)
+```
+
+**Verdicts with reasons**
+
+```python
+ok = await agent.check("cart has 3 items")
+if ok:
+    print("Success!")
+else:
+    print(f"Failed: {ok.reason}")
+```
+
+**Observation function**
+
+```python
+async def observe():
+    """Return current environment state."""
+    return [Text(text="Current page: checkout")]
+
+agent = Agent(llm=llm, tools=tools, observe=observe)
+```
+
+**Error handling**
+
+```python
+try:
+    await agent.do("complete checkout")
+except TaskAbortedError as e:
+    print(f"Task failed: {e}")
+```
+
+## Supported LLMs
+
+```python
+from dodo import Gemini
+
+Gemini(model="gemini-2.5-flash")  # Default
+Gemini(model="gemini-2.5-pro")    # Pro model
+```
+
+## Creating Tools
+
+```python
+from dodo import Tool, ToolResult, ToolResultStatus
 from pydantic import BaseModel, Field
 
 class SearchTool(Tool):
@@ -136,24 +105,12 @@ class SearchTool(Tool):
         query: str = Field(description="Search query")
 
     async def execute(self, params):
-        # Your search logic here
         results = do_search(params.query)
         return ToolResult(
             name=self.name,
             status=ToolResultStatus.SUCCESS,
-            description=f"Found {len(results)} results for '{params.query}'",
+            description=f"Found {len(results)} results",
         )
-```
-
-## Custom System Prompt
-
-```python
-agent = Agent(
-    llm=my_llm,
-    tools=my_tools,
-    observe=my_observe,
-    system_prompt="You are a helpful assistant that...",
-)
 ```
 
 ## License

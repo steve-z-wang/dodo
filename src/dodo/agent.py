@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from dodo.llm import LLM, Content
 from dodo.tools import Tool
 from dodo.runner import TaskRunner, Run, TaskStatus, MemoryConfig
-from dodo.result import Result, Verdict
+from dodo.result import Verdict
 from dodo.prompts import DEFAULT_SYSTEM_PROMPT
 from dodo.exceptions import TaskAbortedError
 
@@ -25,7 +25,10 @@ class Agent:
         ...     tools=[MyTool()],
         ...     observe=my_context_fn,
         ... )
-        >>> result = await agent.do("perform some task")
+        >>> run = await agent.do("perform some task")
+        >>> print(run.output)      # Structured output
+        >>> print(run.feedback)    # Brief summary
+        >>> print(run.action_log)  # Detailed trace
         >>> value = await agent.tell("some information")
         >>> ok = await agent.check("some condition")
     """
@@ -65,7 +68,7 @@ class Agent:
         task: str,
         max_iterations: int = 20,
         output_schema: Optional[Type[BaseModel]] = None,
-    ) -> Result:
+    ) -> Run:
         """Do a task.
 
         Execute a task using the available tools. The task can be simple (1-2 iterations)
@@ -77,7 +80,7 @@ class Agent:
             output_schema: Optional Pydantic model for structured output
 
         Returns:
-            Result with feedback and optional structured output
+            Run object with full execution history (result, summary, messages, etc.)
 
         Raises:
             TaskAbortedError: If task is aborted by the agent
@@ -88,7 +91,7 @@ class Agent:
             output_schema=output_schema,
         )
 
-        return Result(output=run.result.output, feedback=run.result.feedback)
+        return run
 
     async def tell(
         self,

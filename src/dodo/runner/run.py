@@ -44,18 +44,32 @@ class Run:
     Captures everything about a single task execution:
     - The task description
     - The result (status, output, feedback)
-    - Summary of actions taken
+    - Action log (detailed execution trace)
     - Full message history
     - Step counts
+
+    Convenience properties provide direct access to result fields:
+    - run.output -> run.result.output
+    - run.feedback -> run.result.feedback
     """
 
     result: TaskResult
-    summary: str
+    action_log: str
     messages: List = field(default_factory=list)
 
     task_description: str = ""
     steps_used: int = 0
     max_steps: int = 0
+
+    @property
+    def output(self) -> Optional[Any]:
+        """Convenience property to access result.output."""
+        return self.result.output
+
+    @property
+    def feedback(self) -> Optional[str]:
+        """Convenience property to access result.feedback."""
+        return self.result.feedback
 
     def __str__(self) -> str:
         status = self.result.status.value if self.result.status else "pending"

@@ -129,7 +129,7 @@ class TaskRunner:
 
         self._logger.info(f"Task end - Status: {result.status.value}")
 
-        summary = self._build_summary(pairs)
+        action_log = self._build_action_log(pairs)
 
         messages: List[Message] = []
         for model_msg, response_msg in pairs:
@@ -138,7 +138,7 @@ class TaskRunner:
 
         return Run(
             result=result,
-            summary=summary,
+            action_log=action_log,
             messages=messages,
             task_description=task,
             steps_used=iterations_used,
@@ -199,8 +199,8 @@ class TaskRunner:
             lines.append("")
         return "\n".join(lines)
 
-    def _build_summary(self, pairs: List[MessagePair]) -> str:
-        """Build a summary of actions taken."""
+    def _build_action_log(self, pairs: List[MessagePair]) -> str:
+        """Build a log of actions taken."""
         if not pairs:
             return ""
 
@@ -240,12 +240,12 @@ class TaskRunner:
         # If many pairs, summarize old ones
         if len(pairs) > recent_window:
             old_pairs = pairs[:-recent_window]
-            summary = self._build_summary(old_pairs)
-            if summary:
+            action_log = self._build_action_log(old_pairs)
+            if action_log:
                 tool_messages.append(
                     UserMessage(
                         content=[
-                            Text(text=f"Previous actions in this session:\n{summary}")
+                            Text(text=f"Previous actions in this session:\n{action_log}")
                         ]
                     )
                 )

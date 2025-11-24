@@ -12,7 +12,10 @@ Example:
     >>> from dodo import Agent, Tool
     >>>
     >>> agent = Agent(llm=my_llm, tools=[...], observe=my_context_fn)
-    >>> result = await agent.do("perform some task")
+    >>> run = await agent.do("perform some task")
+    >>> print(run.output)      # Structured output
+    >>> print(run.feedback)    # Brief summary
+    >>> print(run.action_log)  # Detailed execution trace
     >>> value = await agent.tell("some information")
     >>> ok = await agent.check("some condition is true")
 """
@@ -21,7 +24,7 @@ from .agent import Agent
 from .exceptions import TaskAbortedError
 from .tools import Tool, tool
 from .runner import Run, TaskResult, TaskStatus, MemoryConfig
-from .result import Result, Verdict
+from .result import Verdict
 from .llm import (
     LLM,
     Gemini,
@@ -47,7 +50,6 @@ __all__ = [
     "TaskAbortedError",
     "MemoryConfig",
     # Results
-    "Result",
     "Verdict",
     "Run",
     "TaskResult",

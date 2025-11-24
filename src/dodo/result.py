@@ -1,25 +1,6 @@
 """Public result types returned by Agent methods."""
 
 from dataclasses import dataclass
-from typing import Optional, Any
-
-
-@dataclass
-class Result:
-    """Result returned by agent.do().
-
-    Attributes:
-        output: Optional structured output data (if output_schema was provided)
-        feedback: Brief description of what was accomplished
-    """
-
-    output: Optional[Any] = None
-    feedback: Optional[str] = None
-
-    def __str__(self) -> str:
-        if self.output is not None:
-            return f"Result(output={self.output}, feedback='{self.feedback}')"
-        return f"Result(feedback='{self.feedback}')"
 
 
 @dataclass

@@ -1,7 +1,7 @@
 """Tool decorator for creating tools from functions or classes."""
 
 import inspect
-from typing import Any, Callable, Dict, Optional, Type, Union, get_type_hints, get_origin, get_args
+from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, get_type_hints, get_origin, get_args, overload
 from functools import wraps
 
 from griffe import Docstring, DocstringSectionKind
@@ -10,12 +10,29 @@ from pydantic import BaseModel, Field, create_model
 from dodo.tools.base import Tool
 from dodo.llm.content import ToolResult, ToolResultStatus
 
+T = TypeVar("T", bound=type)
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+@overload
+def tool(fn_or_class: T, *, require_descriptions: bool = True) -> T: ...
+
+
+@overload
+def tool(fn_or_class: F, *, require_descriptions: bool = True) -> Tool: ...
+
+
+@overload
+def tool(
+    fn_or_class: None = None, *, require_descriptions: bool = True
+) -> Callable[[Union[T, F]], Union[T, Tool]]: ...
+
 
 def tool(
     fn_or_class: Union[Callable, Type, None] = None,
     *,
     require_descriptions: bool = True,
-):
+) -> Any:
     """Decorator for creating tools from functions or classes.
 
     Works with both functions and classes:

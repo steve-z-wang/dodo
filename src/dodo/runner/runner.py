@@ -97,9 +97,7 @@ class TaskRunner:
 
             reasoning = self._extract_reasoning(model_msg)
             tool_names = (
-                [tc.name for tc in model_msg.tool_calls]
-                if model_msg.tool_calls
-                else []
+                [tc.name for tc in model_msg.tool_calls] if model_msg.tool_calls else []
             )
 
             self._logger.info(f"LLM response - Tools: {tool_names}")
@@ -226,7 +224,9 @@ class TaskRunner:
                 for content in response_msg.content:
                     if isinstance(content, ToolResult):
                         if content.status.value == "error":
-                            lines.append(f"  - {content.description} [FAILED: {content.error}]")
+                            lines.append(
+                                f"  - {content.description} [FAILED: {content.error}]"
+                            )
                         else:
                             lines.append(f"  - {content.description}")
 
@@ -248,17 +248,13 @@ class TaskRunner:
                 tool_messages.append(
                     UserMessage(
                         content=[
-                            Text(
-                                text=f"Previous actions in this session:\n{summary}"
-                            )
+                            Text(text=f"Previous actions in this session:\n{summary}")
                         ]
                     )
                 )
 
         # Add recent pairs with content filtering based on lifespan
-        recent_pairs = (
-            pairs[-recent_window:] if len(pairs) > recent_window else pairs
-        )
+        recent_pairs = pairs[-recent_window:] if len(pairs) > recent_window else pairs
         num_recent = len(recent_pairs)
 
         for idx, (model_msg, response_msg) in enumerate(recent_pairs):

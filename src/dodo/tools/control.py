@@ -87,7 +87,9 @@ class AbortWorkTool(Tool):
     """Signal that the agent cannot proceed further with the task."""
 
     name = "abort_work"
-    description = "Signal that you cannot proceed (stuck, blocked, error, or impossible)"
+    description = (
+        "Signal that you cannot proceed (stuck, blocked, error, or impossible)"
+    )
 
     class Params(BaseModel):
         """Parameters for abort_work tool."""

@@ -74,7 +74,10 @@ class Image(Content):
 
     @classmethod
     def from_base64(
-        cls, data: str, mime_type: Union[ImageMimeType, str] = ImageMimeType.PNG, **kwargs
+        cls,
+        data: str,
+        mime_type: Union[ImageMimeType, str] = ImageMimeType.PNG,
+        **kwargs,
     ) -> "Image":
         """Create Image from base64 string."""
         if isinstance(mime_type, str):

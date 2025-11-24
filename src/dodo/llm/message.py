@@ -21,8 +21,6 @@ class ToolCall(BaseModel):
         return f"ToolCall({self.name}, {args_str})"
 
 
-
-
 class Message(BaseModel):
     """Base message with automatic timestamp."""
 
@@ -49,9 +47,7 @@ class UserMessage(Message):
     def __str__(self) -> str:
         if not self.content:
             return "UserMessage(empty)"
-        text_parts = [
-            part.text for part in self.content if isinstance(part, Text)
-        ]
+        text_parts = [part.text for part in self.content if isinstance(part, Text)]
         image_count = sum(1 for part in self.content if isinstance(part, Image))
 
         text_str = " ".join(text_parts)
@@ -72,12 +68,8 @@ class ModelMessage(Message):
         parts = []
 
         if self.content:
-            text_parts = [
-                part.text for part in self.content if isinstance(part, Text)
-            ]
-            image_count = sum(
-                1 for part in self.content if isinstance(part, Image)
-            )
+            text_parts = [part.text for part in self.content if isinstance(part, Text)]
+            image_count = sum(1 for part in self.content if isinstance(part, Image))
 
             if text_parts:
                 text_str = " ".join(text_parts)
@@ -95,5 +87,3 @@ class ModelMessage(Message):
         if parts:
             return f"ModelMessage({', '.join(parts)})"
         return "ModelMessage(empty)"
-
-

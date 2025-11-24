@@ -13,8 +13,6 @@ from dodo.prompts import DEFAULT_SYSTEM_PROMPT
 from dodo.exceptions import TaskAbortedError
 
 
-
-
 class Agent:
     """Main agent interface for DoDo.
 

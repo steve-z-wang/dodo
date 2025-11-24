@@ -95,14 +95,13 @@ class TaskRunner:
                 tools=tool_registry.get_all(),
             )
 
-            reasoning = self._extract_reasoning(model_msg)
             tool_names = (
                 [tc.name for tc in model_msg.tool_calls] if model_msg.tool_calls else []
             )
 
             self._logger.info(f"LLM response - Tools: {tool_names}")
-            if reasoning:
-                self._logger.info(f"Reasoning: {reasoning}")
+            if model_msg.thoughts:
+                self._logger.info(f"Thoughts: {model_msg.thoughts}")
 
             tool_results = await tool_registry.execute_tool_calls(
                 model_msg.tool_calls or []
@@ -207,10 +206,8 @@ class TaskRunner:
 
         lines = []
         for model_msg, response_msg in pairs:
-            reasoning = self._extract_reasoning(model_msg)
-
-            if reasoning:
-                reasoning = reasoning.strip()
+            if model_msg.thoughts:
+                reasoning = model_msg.thoughts.strip()
                 if "\n" not in reasoning:
                     lines.append(f"- {reasoning}")
                 else:
@@ -301,11 +298,3 @@ class TaskRunner:
             timestamp=msg.timestamp,
             content=filtered_content if filtered_content else None,
         )
-
-    def _extract_reasoning(self, model_msg: ModelMessage) -> Optional[str]:
-        """Extract text reasoning from model message."""
-        if model_msg.content:
-            for content in model_msg.content:
-                if hasattr(content, "text") and content.text:
-                    return content.text
-        return None

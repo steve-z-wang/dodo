@@ -60,12 +60,19 @@ class UserMessage(Message):
 
 
 class ModelMessage(Message):
-    """Model response with optional tool calls."""
+    """Model response with optional tool calls and reasoning."""
 
     tool_calls: Optional[List[ToolCall]] = None
+    thoughts: Optional[str] = None  # Model's thinking/reasoning
 
     def __str__(self) -> str:
         parts = []
+
+        if self.thoughts:
+            thoughts_str = self.thoughts
+            if len(thoughts_str) > 100:
+                thoughts_str = thoughts_str[:100] + "..."
+            parts.append(f"thoughts={thoughts_str}")
 
         if self.content:
             text_parts = [part.text for part in self.content if isinstance(part, Text)]

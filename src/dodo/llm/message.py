@@ -64,8 +64,8 @@ class ToolCall(BaseModel):
         return f"ToolCall({self.name}, {args_str})"
 
 
-class ToolResult(BaseModel):
-    """Result of tool execution."""
+class ToolResultContent(Content):
+    """Result of tool execution - can be included in UserMessage content."""
 
     tool_call_id: Optional[str] = None  # Match by ID if available
     name: str  # Tool name
@@ -80,7 +80,9 @@ class ToolResult(BaseModel):
             parts.append(f"error={self.error}")
         if self.terminal:
             parts.append("terminal")
-        return f"ToolResult({', '.join(parts)})"
+        return f"ToolResultContent({', '.join(parts)})"
+
+
 
 
 class Message(BaseModel):
@@ -123,8 +125,8 @@ class UserMessage(Message):
         return f"UserMessage({text_str})"
 
 
-class AssistantMessage(Message):
-    """Assistant response with optional tool calls."""
+class ModelMessage(Message):
+    """Model response with optional tool calls."""
 
     tool_calls: Optional[List[ToolCall]] = None
 
@@ -153,27 +155,7 @@ class AssistantMessage(Message):
             parts.append(f"tools=[{', '.join(tool_names)}]")
 
         if parts:
-            return f"AssistantMessage({', '.join(parts)})"
-        return "AssistantMessage(empty)"
+            return f"ModelMessage({', '.join(parts)})"
+        return "ModelMessage(empty)"
 
 
-class ToolResultMessage(Message):
-    """Tool execution results with observation content."""
-
-    results: List[ToolResult]
-
-    def __str__(self) -> str:
-        result_summary = [f"{r.name}:{r.status.value}" for r in self.results]
-        results_str = ", ".join(result_summary)
-
-        text_count = 0
-        image_count = 0
-        if self.content:
-            text_count = sum(
-                1 for part in self.content if isinstance(part, TextContent)
-            )
-            image_count = sum(
-                1 for part in self.content if isinstance(part, ImageContent)
-            )
-
-        return f"ToolResultMessage(results=[{results_str}], text_parts={text_count}, images={image_count})"

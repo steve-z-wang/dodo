@@ -4,7 +4,7 @@ from typing import Any, Optional, Type, TYPE_CHECKING
 from pydantic import BaseModel, Field, create_model
 
 from dodo.tool import Tool
-from dodo.llm.message import ToolResult, ToolResultStatus
+from dodo.llm.message import ToolResultContent, ToolResultStatus
 
 if TYPE_CHECKING:
     from dodo.run import TaskResult
@@ -58,7 +58,7 @@ class CompleteWorkTool(Tool):
                 ),
             )
 
-    async def execute(self, params: Params) -> ToolResult:
+    async def execute(self, params: Params) -> ToolResultContent:
         """Signal task completion and store feedback and output."""
         self.task_result.status = self._TaskStatus.COMPLETED
         self.task_result.feedback = params.feedback
@@ -75,7 +75,7 @@ class CompleteWorkTool(Tool):
             except (TypeError, ValueError):
                 desc += f"\nOutput data: {params.output}"
 
-        return ToolResult(
+        return ToolResultContent(
             name=self.name,
             status=ToolResultStatus.SUCCESS,
             description=desc,
@@ -103,12 +103,12 @@ class AbortWorkTool(Tool):
         self.task_result = task_result
         self._TaskStatus = TaskStatus
 
-    async def execute(self, params: Params) -> ToolResult:
+    async def execute(self, params: Params) -> ToolResultContent:
         """Signal task abortion and store reason."""
         self.task_result.status = self._TaskStatus.ABORTED
         self.task_result.feedback = params.reason
 
-        return ToolResult(
+        return ToolResultContent(
             name=self.name,
             status=ToolResultStatus.SUCCESS,
             description=f"Aborted: {params.reason}",

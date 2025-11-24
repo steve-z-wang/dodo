@@ -22,7 +22,17 @@ from .exceptions import TaskAbortedError
 from .tool import Tool
 from .result import Result, Verdict
 from .run import Run, TaskResult, TaskStatus
-from .llm import LLM, Message, Content, TextContent, ImageContent
+from .llm import (
+    LLM,
+    Message,
+    Content,
+    TextContent,
+    ImageContent,
+    ToolResultContent,
+    SystemMessage,
+    UserMessage,
+    ModelMessage,
+)
 from .prompts import DEFAULT_SYSTEM_PROMPT
 from .memory import MemoryConfig
 
@@ -42,10 +52,16 @@ __all__ = [
     "TaskStatus",
     # LLM
     "LLM",
+    # Content types
     "Message",
     "Content",
     "TextContent",
     "ImageContent",
+    "ToolResultContent",
+    # Message types (3 only: System, User, Model)
+    "SystemMessage",
+    "UserMessage",
+    "ModelMessage",
     # Prompts
     "DEFAULT_SYSTEM_PROMPT",
 ]

@@ -8,10 +8,10 @@ from dodo.llm import (
     Message,
     SystemMessage,
     UserMessage,
-    AssistantMessage,
-    ToolResultMessage,
+    ModelMessage,
     Content,
     TextContent,
+    ToolResultContent,
 )
 from dodo.tool import Tool
 from dodo.tool_registry import ToolRegistry
@@ -23,8 +23,8 @@ from dodo.memory import MemoryConfig
 if TYPE_CHECKING:
     from dodo.llm import LLM
 
-# Type alias for message pairs
-MessagePair = Tuple[AssistantMessage, ToolResultMessage]
+# Type alias for message pairs (ModelMessage + UserMessage with tool results/observations)
+MessagePair = Tuple[ModelMessage, UserMessage]
 
 
 class TaskRunner:
@@ -92,15 +92,15 @@ class TaskRunner:
             all_messages = self._prepare_messages(session_start_messages, pairs)
 
             self._logger.debug("Sending LLM request...")
-            assistant_msg = await self._llm.call_tools(
+            model_msg = await self._llm.call_tools(
                 messages=all_messages,
                 tools=tool_registry.get_all(),
             )
 
-            reasoning = self._extract_reasoning(assistant_msg)
+            reasoning = self._extract_reasoning(model_msg)
             tool_names = (
-                [tc.name for tc in assistant_msg.tool_calls]
-                if assistant_msg.tool_calls
+                [tc.name for tc in model_msg.tool_calls]
+                if model_msg.tool_calls
                 else []
             )
 
@@ -109,17 +109,16 @@ class TaskRunner:
                 self._logger.info(f"Reasoning: {reasoning}")
 
             tool_results = await tool_registry.execute_tool_calls(
-                assistant_msg.tool_calls or []
+                model_msg.tool_calls or []
             )
 
             # Get context after tool execution via observe callback
             observation = await self._observe()
 
-            tool_result_msg = ToolResultMessage(
-                results=tool_results,
-                content=observation,
-            )
-            pairs.append((assistant_msg, tool_result_msg))
+            # Combine tool results and observation into UserMessage content
+            response_content: List[Content] = list(tool_results) + list(observation)
+            response_msg = UserMessage(content=response_content)
+            pairs.append((model_msg, response_msg))
 
             self._logger.info(f"Iteration {iteration + 1} - End")
 
@@ -138,9 +137,9 @@ class TaskRunner:
         summary = self._build_summary(pairs)
 
         messages: List[Message] = []
-        for assistant_msg, tool_result_msg in pairs:
-            messages.append(assistant_msg)
-            messages.append(tool_result_msg)
+        for model_msg, response_msg in pairs:
+            messages.append(model_msg)
+            messages.append(response_msg)
 
         return Run(
             result=result,
@@ -211,8 +210,8 @@ class TaskRunner:
             return ""
 
         lines = []
-        for assistant_msg, tool_result_msg in pairs:
-            reasoning = self._extract_reasoning(assistant_msg)
+        for model_msg, response_msg in pairs:
+            reasoning = self._extract_reasoning(model_msg)
 
             if reasoning:
                 reasoning = reasoning.strip()
@@ -224,11 +223,14 @@ class TaskRunner:
                     for line in reasoning_lines[1:]:
                         lines.append(f"  {line}")
 
-            for result in tool_result_msg.results:
-                if result.status.value == "error":
-                    lines.append(f"  - {result.description} [FAILED: {result.error}]")
-                else:
-                    lines.append(f"  - {result.description}")
+            # Extract tool results from response message content
+            if response_msg.content:
+                for content in response_msg.content:
+                    if isinstance(content, ToolResultContent):
+                        if content.status.value == "error":
+                            lines.append(f"  - {content.description} [FAILED: {content.error}]")
+                        else:
+                            lines.append(f"  - {content.description}")
 
         return "\n".join(lines)
 
@@ -261,31 +263,31 @@ class TaskRunner:
         )
         num_recent = len(recent_pairs)
 
-        for idx, (assistant_msg, tool_result_msg) in enumerate(recent_pairs):
-            tool_messages.append(assistant_msg)
+        for idx, (model_msg, response_msg) in enumerate(recent_pairs):
+            tool_messages.append(model_msg)
 
             # Filter content based on lifespan
             # idx=0 is oldest in recent_pairs, idx=num_recent-1 is newest
             # distance_from_end: 0 = current iteration, 1 = previous, etc.
             distance_from_end = num_recent - 1 - idx
             filtered_msg = self._filter_content_by_lifespan(
-                tool_result_msg, distance_from_end
+                response_msg, distance_from_end
             )
             tool_messages.append(filtered_msg)
 
         return session_start_messages + tool_messages
 
     def _filter_content_by_lifespan(
-        self, msg: ToolResultMessage, distance_from_end: int
-    ) -> ToolResultMessage:
+        self, msg: UserMessage, distance_from_end: int
+    ) -> UserMessage:
         """Filter content based on lifespan.
 
         Args:
-            msg: ToolResultMessage to filter
+            msg: UserMessage to filter
             distance_from_end: 0 = current iteration, 1 = previous, etc.
 
         Returns:
-            New ToolResultMessage with filtered content
+            New UserMessage with filtered content
         """
         if not msg.content:
             return msg
@@ -301,16 +303,15 @@ class TaskRunner:
             # Otherwise, skip (content is too old for its lifespan)
 
         # Return new message with filtered content
-        return ToolResultMessage(
+        return UserMessage(
             timestamp=msg.timestamp,
-            results=msg.results,
             content=filtered_content if filtered_content else None,
         )
 
-    def _extract_reasoning(self, assistant_msg: AssistantMessage) -> Optional[str]:
-        """Extract text reasoning from assistant message."""
-        if assistant_msg.content:
-            for content in assistant_msg.content:
+    def _extract_reasoning(self, model_msg: ModelMessage) -> Optional[str]:
+        """Extract text reasoning from model message."""
+        if model_msg.content:
+            for content in model_msg.content:
                 if hasattr(content, "text") and content.text:
                     return content.text
         return None

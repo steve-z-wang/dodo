@@ -30,7 +30,7 @@ class Agent:
         >>> print(run.feedback)    # Brief summary
         >>> print(run.action_log)  # Detailed trace
         >>> value = await agent.tell("some information")
-        >>> ok = await agent.check("some condition")
+        >>> verdict = await agent.verify("some condition")
     """
 
     def __init__(
@@ -160,43 +160,43 @@ class Agent:
         else:
             return run.output.value if run.output else ""
 
-    async def check(
+    async def verify(
         self,
         condition: str,
         max_iterations: int = 10,
     ) -> Verdict:
-        """Check if a condition is true.
+        """Verify if a condition is true.
 
         Verify a condition on the current context.
 
         Args:
-            condition: Condition to check in natural language (e.g., "user is logged in")
+            condition: Condition to verify in natural language (e.g., "user is logged in")
             max_iterations: Maximum iterations (default: 10)
 
         Returns:
             Verdict with passed (bool) and reason (str)
 
         Raises:
-            TaskAbortedError: If check fails
+            TaskAbortedError: If verification fails
         """
 
-        class CheckResult(BaseModel):
-            """Check result."""
+        class VerifyResult(BaseModel):
+            """Verify result."""
 
             passed: bool = Field(
                 description="True if the condition is met, False otherwise"
             )
 
-        task = f"Check if the following condition is true: {condition}"
+        task = f"Verify if the following condition is true: {condition}"
 
         run = await self._run_task(
             task=task,
             max_iterations=max_iterations,
-            output_schema=CheckResult,
+            output_schema=VerifyResult,
         )
 
         if not run.output:
-            raise RuntimeError("Check failed: no structured output received")
+            raise RuntimeError("Verification failed: no structured output received")
 
         return Verdict(
             passed=run.output.passed,

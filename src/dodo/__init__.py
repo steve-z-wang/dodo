@@ -6,7 +6,7 @@ that can perform tasks, retrieve information, and verify conditions.
 Three simple methods:
 - do(task) - Do a task (simple or complex)
 - tell(what) - Tell me something (retrieve information)
-- check(condition) - Check if something is true
+- verify(condition) - Verify if something is true
 
 Example:
     >>> from dodo import Agent, Tool
@@ -17,7 +17,7 @@ Example:
     >>> print(run.feedback)    # Brief summary
     >>> print(run.action_log)  # Detailed execution trace
     >>> value = await agent.tell("some information")
-    >>> ok = await agent.check("some condition is true")
+    >>> verdict = await agent.verify("some condition is true")
 """
 
 from .agent import Agent

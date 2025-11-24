@@ -48,3 +48,12 @@ target-version = "py310"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.pdm.scripts]
+test = "pytest tests/ -v"
+test-unit = "pytest tests/unit -v"
+test-integ = "pytest tests/integration -v"
+test-cov = "pytest tests/ -v --cov=src/dodo --cov-report=html"
+format = "black src/ tests/"
+lint = "ruff check src/ tests/"
+lint-fix = "ruff check --fix src/ tests/"

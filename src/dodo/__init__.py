@@ -1,11 +1,12 @@
-"""DoDo - A stateful agentic framework.
+"""DoDo - An AI workflow automation engine.
 
-DoDo provides a simple, generic framework for building stateful AI agents
-that can perform tasks and verify conditions.
+Build intelligent automation workflows with LLM agents.
+Browser automation, RPA, testing, and more.
 
-Two simple methods:
-- do(task, output_schema) - Do a task (simple or complex), optionally return structured output
-- verify(condition) - Verify if something is true
+Three simple methods:
+- do(task, output_schema) - Execute workflow steps with LLM reasoning
+- verify(condition) - Check if conditions are met
+- redo(run) - Replay recorded workflows without LLM
 
 Example:
     >>> from dodo import Agent, Tool

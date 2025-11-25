@@ -3,7 +3,9 @@
 [![PyPI version](https://img.shields.io/pypi/v/dodoai.svg)](https://pypi.org/project/dodoai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Lightweight agent framework with tools and memory.
+An AI workflow automation engine for browser automation, RPA, testing, and more.
+
+Built for frameworks like [webtask](https://github.com/steve-z-wang/webtask).
 
 ## Installation
 
@@ -17,113 +19,203 @@ pip install dodoai[gemini]  # With Gemini support
 ```python
 from dodo import Agent, Gemini
 
-agent = Agent(llm=Gemini(), tools=[add_todo, complete_todo])
+agent = Agent(llm=Gemini(), tools=[...])
 
-await agent.do("add buy milk to my list")
-await agent.do("mark buy milk as done")
+# First time - LLM figures out the workflow
+run = await agent.do("add item to cart")
 
-ok = await agent.check("all tasks are completed")
-if ok:
-    print("Success!")
+# Later - replay without LLM (fast & cheap)
+await agent.redo(run)
+verdict = await agent.verify("cart has 1 item")
+
+if not verdict.passed:
+    # Fallback to LLM if replay fails
+    run = await agent.do("add item to cart")
 ```
+
+## Core Concepts
+
+**Three simple methods for workflow automation:**
+
+- `do(task)` - Execute workflow steps with LLM reasoning
+- `verify(condition)` - Check if conditions are met
+- `redo(run)` - Replay recorded workflows without LLM
 
 ## Features
 
-**Stateful agents**
+### Stateful workflows
+
+Agent remembers context across multiple steps:
 
 ```python
-# Agent remembers context across tasks
-await agent.do("calculate 25 * 4")
-await agent.do("add 10 to the result")
-await agent.do("multiply by 2")
+# Multi-step workflow with context
+await agent.do("search for laptop on Amazon")
+await agent.do("add the first result to cart")
+await agent.do("proceed to checkout")
+
+verdict = await agent.verify("item is in cart")
 ```
 
-**Structured output** (using [Pydantic](https://docs.pydantic.dev/))
+### Efficient replay
+
+Record once, replay when environment is similar:
+
+```python
+# First time - LLM figures out the workflow (expensive)
+run = await agent.do("add laptop to cart and checkout")
+
+# Later - replay the same workflow (cheap)
+await agent.redo(run)
+verdict = await agent.verify("order placed successfully")
+
+if not verdict.passed:
+    # Environment changed, use LLM to adapt
+    run = await agent.do("add laptop to cart and checkout")
+```
+
+### Structured output
+
+Get typed results using Pydantic models:
 
 ```python
 from pydantic import BaseModel
 
-class Result(BaseModel):
-    value: float
-    expression: str
+class ProductInfo(BaseModel):
+    name: str
+    price: float
+    in_stock: bool
 
-result = await agent.tell("the calculation result", schema=Result)
+run = await agent.do("extract product information", output_schema=ProductInfo)
+product = run.output  # Typed ProductInfo object
 ```
 
-**Verdicts with reasons**
+### Verification with feedback
+
+Check conditions with detailed reasoning:
 
 ```python
-ok = await agent.check("result is greater than 100")
-if ok:
+verdict = await agent.verify("cart total is less than $100")
+if verdict.passed:
     print("Success!")
 else:
-    print(f"Failed: {ok.reason}")
+    print(f"Failed: {verdict.reason}")
 ```
 
-## Usage
+## Use Cases
 
-**1. Create tools**
+**Browser automation:**
+```python
+# Automate web workflows
+await agent.do("go to linkedin.com")
+await agent.do("search for software engineers in SF")
+await agent.do("message the first 5 results")
+```
 
-Simple tools using `@tool` decorator:
+**RPA (Robotic Process Automation):**
+```python
+# Automate repetitive workflows
+await agent.do("login to portal")
+await agent.do("navigate to reports section")
+await agent.do("download monthly report")
+```
+
+**Testing & QA:**
+```python
+# Record test cases, replay for regression
+run = await agent.do("complete checkout flow")
+await agent.verify("order confirmation displayed")
+
+# Regression test
+await agent.redo(run)
+```
+
+## Building Workflows
+
+**1. Define tools**
+
+Tools are the actions your agent can perform:
 
 ```python
 from dodo import tool
 
 @tool
-async def calculator(expression: str) -> str:
-    """Perform arithmetic calculations.
+async def click_button(element_id: str) -> str:
+    """Click a button on the page.
 
     Args:
-        expression: Math expression to evaluate
+        element_id (str): ID of button to click
     """
-    return str(eval(expression))
-```
+    # Your automation logic
+    return "Button clicked"
 
-Tools with dependencies using classes:
-
-```python
 @tool
-class SearchTool:
-    """Search the database."""
+class DatabaseTool:
+    """Query the database."""
 
-    def __init__(self, database):
-        self.database = database
+    def __init__(self, db_connection):
+        self.db = db_connection
 
     async def run(self, query: str) -> str:
         """
         Args:
-            query: Search query
+            query (str): SQL query to execute
         """
-        return self.database.search(query)
+        return self.db.execute(query)
 ```
 
-**2. Define observation function**
+**2. Define observation**
+
+Observation provides context to the agent:
 
 ```python
 async def observe():
-    """Return current environment state as a list of strings or Content objects."""
-    return [f"Current user: {username}", f"History: {history}"]
+    """Return current state for the agent to see."""
+    return [
+        f"Current page: {browser.current_url}",
+        f"Visible elements: {browser.get_elements()}",
+    ]
 ```
 
-**3. Create agent and run tasks**
+**3. Create and run agent**
 
 ```python
 from dodo import Agent, Gemini
 
-agent = Agent(llm=Gemini(), tools=[calculator], observe=observe)
+agent = Agent(
+    llm=Gemini(),
+    tools=[click_button, DatabaseTool(db)],
+    observe=observe
+)
 
-await agent.do("calculate 25 * 4 + 10")            # Do a task
-result = await agent.tell("the last calculation")  # Get information
-ok = await agent.check("result is greater than 100")  # Check a condition
+# Execute workflows
+run = await agent.do("click login button and verify")
+if run.output:
+    print("Workflow succeeded!")
 ```
 
-**4. Error handling**
+**4. Handle errors**
 
 ```python
+from dodo import TaskAbortedError
+
 try:
-    await agent.do("divide 10 by 0")
+    await agent.do("impossible task")
 except TaskAbortedError as e:
-    print(f"Task failed: {e}")
+    print(f"Workflow aborted: {e}")
+```
+
+## Run Objects
+
+Every `do()` call returns a Run object with full execution details:
+
+```python
+run = await agent.do("complete checkout")
+
+run.output       # Structured output (if output_schema provided)
+run.feedback     # Brief summary: "Checkout completed successfully"
+run.action_log   # Detailed trace of all actions taken
+run.messages     # Full conversation history
+run.steps_used   # Number of LLM calls made
 ```
 
 ## Supported LLMs
@@ -131,20 +223,25 @@ except TaskAbortedError as e:
 ```python
 from dodo import Gemini
 
-Gemini(model="gemini-2.5-flash")  # Default
-Gemini(model="gemini-2.5-pro")    # Pro model
+# Gemini models
+agent = Agent(llm=Gemini(model="gemini-2.0-flash-exp"))
+agent = Agent(llm=Gemini(model="gemini-2.5-pro"))
 ```
 
-You can also implement your own LLM by extending the `LLM` base class:
+**Custom LLM:**
 
 ```python
 from dodo import LLM
 
 class MyLLM(LLM):
     async def call_tools(self, messages, tools):
-        # Your LLM API call here
+        # Your LLM implementation
         pass
 ```
+
+## Examples
+
+- [webtask](https://github.com/steve-z-wang/webtask) - Browser automation framework built on dodo
 
 ## License
 

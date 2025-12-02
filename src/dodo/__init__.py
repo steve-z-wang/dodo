@@ -3,9 +3,8 @@
 Build intelligent automation workflows with LLM agents.
 Browser automation, RPA, testing, and more.
 
-Three simple methods:
+Two simple methods:
 - do(task, output_schema) - Execute workflow steps with LLM reasoning
-- verify(condition) - Check if conditions are met
 - redo(run) - Replay recorded workflows without LLM
 
 Example:
@@ -16,14 +15,12 @@ Example:
     >>> print(run.output)      # Structured output
     >>> print(run.feedback)    # Brief summary
     >>> print(run.action_log)  # Detailed execution trace
-    >>> verdict = await agent.verify("some condition is true")
 """
 
 from .agent import Agent
 from .exceptions import TaskAbortedError
 from .tools import Tool, tool
 from .runner import Run, TaskResult, TaskStatus, MemoryConfig
-from .result import Verdict
 from .llm import (
     LLM,
     Gemini,
@@ -39,7 +36,7 @@ from .llm import (
 )
 from .prompts import DEFAULT_SYSTEM_PROMPT
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 __all__ = [
     # Core
@@ -49,7 +46,6 @@ __all__ = [
     "TaskAbortedError",
     "MemoryConfig",
     # Results
-    "Verdict",
     "Run",
     "TaskResult",
     "TaskStatus",

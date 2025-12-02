@@ -1,14 +1,13 @@
 """Agent - main interface for DoDo agentic framework."""
 
 import logging
-from typing import Awaitable, Callable, List, Optional, Type, Any
+from typing import Awaitable, Callable, List, Optional, Type
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from dodo.llm import LLM, Content
 from dodo.tools import Tool
 from dodo.runner import TaskRunner, RedoRunner, Run, TaskStatus, MemoryConfig
-from dodo.result import Verdict
 from dodo.prompts import DEFAULT_SYSTEM_PROMPT
 from dodo.exceptions import TaskAbortedError
 
@@ -16,7 +15,7 @@ from dodo.exceptions import TaskAbortedError
 class Agent:
     """Main agent interface for DoDo.
 
-    A stateful agent that can perform tasks, retrieve information, and verify conditions.
+    A stateful agent that can perform tasks using LLM reasoning.
     Maintains conversation history across calls when stateful=True.
 
     Example:
@@ -29,7 +28,6 @@ class Agent:
         >>> print(run.output)      # Structured output
         >>> print(run.feedback)    # Brief summary
         >>> print(run.action_log)  # Detailed trace
-        >>> verdict = await agent.verify("some condition")
     """
 
     def __init__(
@@ -99,10 +97,10 @@ class Agent:
         any LLM reasoning. This is much faster and cheaper than do() but less
         flexible - it will fail if the page/state has changed.
 
-        Use verify() afterwards to check if the replay succeeded:
+        Use do() with output_schema afterwards to check if the replay succeeded:
             >>> await agent.redo(run)
-            >>> verdict = await agent.verify("cart has 2 items")
-            >>> if not verdict.passed:
+            >>> run = await agent.do("check if cart has 2 items", output_schema=CheckResult)
+            >>> if not run.output.passed:
             ...     # Fall back to intelligent do()
             ...     await agent.do("Add 2 items to cart")
 
@@ -115,49 +113,6 @@ class Agent:
         """
         redo_runner = RedoRunner(self.tools, self.observe)
         await redo_runner.replay(run)
-
-    async def verify(
-        self,
-        condition: str,
-        max_iterations: int = 10,
-    ) -> Verdict:
-        """Verify if a condition is true.
-
-        Verify a condition on the current context.
-
-        Args:
-            condition: Condition to verify in natural language (e.g., "user is logged in")
-            max_iterations: Maximum iterations (default: 10)
-
-        Returns:
-            Verdict with passed (bool) and reason (str)
-
-        Raises:
-            TaskAbortedError: If verification fails
-        """
-
-        class VerifyResult(BaseModel):
-            """Verify result."""
-
-            passed: bool = Field(
-                description="True if the condition is met, False otherwise"
-            )
-
-        task = f"Verify if the following condition is true: {condition}"
-
-        run = await self._run_task(
-            task=task,
-            max_iterations=max_iterations,
-            output_schema=VerifyResult,
-        )
-
-        if not run.output:
-            raise RuntimeError("Verification failed: no structured output received")
-
-        return Verdict(
-            passed=run.output.passed,
-            reason=run.feedback or "",
-        )
 
     async def _run_task(
         self,

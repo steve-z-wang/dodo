@@ -26,19 +26,13 @@ run = await agent.do("add item to cart")
 
 # Later - replay without LLM (fast & cheap)
 await agent.redo(run)
-verdict = await agent.verify("cart has 1 item")
-
-if not verdict.passed:
-    # Fallback to LLM if replay fails
-    run = await agent.do("add item to cart")
 ```
 
 ## Core Concepts
 
-**Three simple methods for workflow automation:**
+**Two simple methods for workflow automation:**
 
 - `do(task)` - Execute workflow steps with LLM reasoning
-- `verify(condition)` - Check if conditions are met
 - `redo(run)` - Replay recorded workflows without LLM
 
 ## Features
@@ -52,8 +46,6 @@ Agent remembers context across multiple steps:
 await agent.do("search for laptop on Amazon")
 await agent.do("add the first result to cart")
 await agent.do("proceed to checkout")
-
-verdict = await agent.verify("item is in cart")
 ```
 
 ### Efficient replay
@@ -66,11 +58,6 @@ run = await agent.do("add laptop to cart and checkout")
 
 # Later - replay the same workflow (cheap)
 await agent.redo(run)
-verdict = await agent.verify("order placed successfully")
-
-if not verdict.passed:
-    # Environment changed, use LLM to adapt
-    run = await agent.do("add laptop to cart and checkout")
 ```
 
 ### Structured output
@@ -87,18 +74,6 @@ class ProductInfo(BaseModel):
 
 run = await agent.do("extract product information", output_schema=ProductInfo)
 product = run.output  # Typed ProductInfo object
-```
-
-### Verification with feedback
-
-Check conditions with detailed reasoning:
-
-```python
-verdict = await agent.verify("cart total is less than $100")
-if verdict.passed:
-    print("Success!")
-else:
-    print(f"Failed: {verdict.reason}")
 ```
 
 ## Use Cases
@@ -123,7 +98,6 @@ await agent.do("download monthly report")
 ```python
 # Record test cases, replay for regression
 run = await agent.do("complete checkout flow")
-await agent.verify("order confirmation displayed")
 
 # Regression test
 await agent.redo(run)

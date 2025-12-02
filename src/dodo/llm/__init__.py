@@ -1,13 +1,7 @@
 """LLM abstractions for DoDo."""
 
 from .llm import LLM
-from .message import (
-    Message,
-    ToolCall,
-    SystemMessage,
-    UserMessage,
-    ModelMessage,
-)
+from .message import Message, Role
 from .content import (
     Content,
     Text,
@@ -15,6 +9,7 @@ from .content import (
     ImageMimeType,
     ToolResult,
     ToolResultStatus,
+    ToolCall,
 )
 from .providers import Gemini
 
@@ -29,10 +24,8 @@ __all__ = [
     "ImageMimeType",
     "ToolResult",
     "ToolResultStatus",
+    "ToolCall",
     # Message types
     "Message",
-    "ToolCall",
-    "SystemMessage",
-    "UserMessage",
-    "ModelMessage",
+    "Role",
 ]

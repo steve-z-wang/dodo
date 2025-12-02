@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import List, TYPE_CHECKING
 
-from .message import Message, ModelMessage
+from .message import Message, Role
 
 if TYPE_CHECKING:
     from dodo.tool import Tool
@@ -21,7 +21,7 @@ class LLM(ABC):
             async def call_tools(self, messages, tools):
                 # Convert to your LLM's format
                 # Make API call
-                # Return ModelMessage with tool_calls
+                # Return Message with role=Role.MODEL and tool calls in content
                 pass
     """
 
@@ -33,21 +33,20 @@ class LLM(ABC):
         self,
         messages: List[Message],
         tools: List["Tool"],
-    ) -> ModelMessage:
+    ) -> Message:
         """Generate response with tool calling.
 
         Args:
             messages: Conversation history as list of Message objects.
-                Can include SystemMessage, UserMessage, ModelMessage.
             tools: List of tools available for the LLM to call.
 
         Returns:
-            ModelMessage with content (text/images) and/or tool_calls.
+            Message with role=Role.MODEL containing text and/or ToolCall content.
 
         Example:
             >>> messages = [
-            ...     SystemMessage(content=[TextContent(text="You are an agent")]),
-            ...     UserMessage(content=[TextContent(text="Do something")]),
+            ...     Message(role=Role.SYSTEM, content=[Text(text="You are an agent")]),
+            ...     Message(role=Role.USER, content=[Text(text="Do something")]),
             ... ]
             >>> response = await llm.call_tools(messages, tools=[MyTool()])
             >>> print(response.tool_calls[0].name)

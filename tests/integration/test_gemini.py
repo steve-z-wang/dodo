@@ -10,12 +10,12 @@ from pydantic import BaseModel, Field
 
 from dodo.llm import (
     Gemini,
-    SystemMessage,
-    UserMessage,
-    ModelMessage,
+    Message,
+    Role,
     Text,
     ToolResult,
     ToolResultStatus,
+    ToolCall,
 )
 from dodo.tools import Tool
 
@@ -88,29 +88,32 @@ class TestGeminiIntegration:
     async def test_simple_response(self, gemini):
         """Test that Gemini returns a response."""
         messages = [
-            SystemMessage(content=[Text(text="You are a helpful assistant. Be concise.")]),
-            UserMessage(content=[Text(text="What is 2 + 2? Reply with just the number.")]),
+            Message(role=Role.SYSTEM, content=[Text(text="You are a helpful assistant. Be concise.")]),
+            Message(role=Role.USER, content=[Text(text="What is 2 + 2? Reply with just the number.")]),
         ]
 
         result = await gemini.call_tools(messages, tools=[])
 
-        assert isinstance(result, ModelMessage)
-        assert result.thoughts is not None
-        assert "4" in result.thoughts
+        assert isinstance(result, Message)
+        assert result.role == Role.MODEL
+        assert result.text is not None
+        assert "4" in result.text
 
     @pytest.mark.asyncio
     async def test_tool_calling(self, gemini):
         """Test that Gemini can call tools."""
         messages = [
-            SystemMessage(
+            Message(
+                role=Role.SYSTEM,
                 content=[Text(text="You are a helpful assistant. Use tools when needed.")]
             ),
-            UserMessage(content=[Text(text="Please greet Alice.")]),
+            Message(role=Role.USER, content=[Text(text="Please greet Alice.")]),
         ]
 
         result = await gemini.call_tools(messages, tools=[GreetTool()])
 
-        assert isinstance(result, ModelMessage)
+        assert isinstance(result, Message)
+        assert result.role == Role.MODEL
         assert result.tool_calls is not None
         assert len(result.tool_calls) >= 1
         assert result.tool_calls[0].name == "greet"
@@ -120,17 +123,20 @@ class TestGeminiIntegration:
     async def test_tool_result_handling(self, gemini):
         """Test that Gemini can process tool results."""
         messages = [
-            SystemMessage(
+            Message(
+                role=Role.SYSTEM,
                 content=[Text(text="You are a helpful assistant. Use tools when needed.")]
             ),
-            UserMessage(content=[Text(text="What is 5 * 7?")]),
-            ModelMessage(
-                thoughts="I'll calculate this.",
-                tool_calls=[
-                    {"name": "calculator", "arguments": {"expression": "5 * 7"}}
+            Message(role=Role.USER, content=[Text(text="What is 5 * 7?")]),
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="I'll calculate this."),
+                    ToolCall(name="calculator", arguments={"expression": "5 * 7"})
                 ],
             ),
-            UserMessage(
+            Message(
+                role=Role.USER,
                 content=[
                     ToolResult(
                         name="calculator",
@@ -143,43 +149,48 @@ class TestGeminiIntegration:
 
         result = await gemini.call_tools(messages, tools=[CalculatorTool()])
 
-        assert isinstance(result, ModelMessage)
-        assert result.thoughts is not None
-        assert "35" in result.thoughts
+        assert isinstance(result, Message)
+        assert result.role == Role.MODEL
+        assert result.text is not None
+        assert "35" in result.text
 
     @pytest.mark.asyncio
     async def test_multiple_tools_available(self, gemini):
         """Test that Gemini can choose from multiple tools."""
         messages = [
-            SystemMessage(
+            Message(
+                role=Role.SYSTEM,
                 content=[Text(text="You are a helpful assistant. Use the appropriate tool.")]
             ),
-            UserMessage(content=[Text(text="Calculate 10 + 20.")]),
+            Message(role=Role.USER, content=[Text(text="Calculate 10 + 20.")]),
         ]
 
         result = await gemini.call_tools(
             messages, tools=[GreetTool(), CalculatorTool()]
         )
 
-        assert isinstance(result, ModelMessage)
+        assert isinstance(result, Message)
+        assert result.role == Role.MODEL
         # Should choose calculator, not greet
         if result.tool_calls:
             assert result.tool_calls[0].name == "calculator"
 
     @pytest.mark.asyncio
-    async def test_thoughts_captured(self, gemini):
-        """Test that model text response is captured as thoughts."""
+    async def test_text_captured(self, gemini):
+        """Test that model text response is captured."""
         messages = [
-            SystemMessage(
+            Message(
+                role=Role.SYSTEM,
                 content=[Text(text="You are a helpful assistant. Be concise.")]
             ),
-            UserMessage(content=[Text(text="Say hello.")]),
+            Message(role=Role.USER, content=[Text(text="Say hello.")]),
         ]
 
         # No tools provided - model must respond with text
         result = await gemini.call_tools(messages, tools=[])
 
-        assert isinstance(result, ModelMessage)
-        # Without tools, model must produce text (captured as thoughts)
-        assert result.thoughts is not None
-        assert len(result.thoughts) > 0
+        assert isinstance(result, Message)
+        assert result.role == Role.MODEL
+        # Without tools, model must produce text
+        assert result.text is not None
+        assert len(result.text) > 0

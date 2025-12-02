@@ -5,8 +5,7 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from dodo.runner import TaskRunner, TaskStatus, MemoryConfig
-from dodo.llm import LLM, Message, ModelMessage, Text, ToolResult, ToolResultStatus
-from dodo.llm.message import ToolCall
+from dodo.llm import LLM, Message, Role, Text, ToolResult, ToolResultStatus, ToolCall
 from dodo.tools import Tool
 
 
@@ -28,12 +27,12 @@ async def no_observation():
 class MockLLM(LLM):
     """Mock LLM that returns predefined responses."""
 
-    def __init__(self, responses: List[ModelMessage]):
+    def __init__(self, responses: List[Message]):
         self.responses = responses
         self.call_count = 0
         self.received_messages: List[List[Message]] = []
 
-    async def call_tools(self, messages: List[Message], tools: List[Tool]) -> ModelMessage:
+    async def call_tools(self, messages: List[Message], tools: List[Tool]) -> Message:
         self.received_messages.append(messages)
         response = self.responses[self.call_count]
         self.call_count += 1
@@ -75,9 +74,10 @@ async def test_runner_completes_task():
     # LLM calls complete_work on first iteration
     llm = MockLLM(
         responses=[
-            ModelMessage(
-                content=[Text(text="I'll complete the task")],
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="I'll complete the task"),
                     ToolCall(
                         id="1",
                         name="complete_work",
@@ -106,9 +106,10 @@ async def test_runner_aborts_task():
     """Test that runner aborts when abort_work is called."""
     llm = MockLLM(
         responses=[
-            ModelMessage(
-                content=[Text(text="I cannot do this")],
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="I cannot do this"),
                     ToolCall(
                         id="1",
                         name="abort_work",
@@ -138,9 +139,10 @@ async def test_runner_max_iterations():
     # LLM never calls complete_work or abort_work
     llm = MockLLM(
         responses=[
-            ModelMessage(
-                content=[Text(text="Still working...")],
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Still working..."),
                     ToolCall(id=str(i), name="add", arguments={"a": 1, "b": 2})
                 ],
             )
@@ -166,15 +168,17 @@ async def test_runner_uses_tools():
     """Test that runner executes tools and passes results to LLM."""
     llm = MockLLM(
         responses=[
-            ModelMessage(
-                content=[Text(text="Let me add those")],
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Let me add those"),
                     ToolCall(id="1", name="add", arguments={"a": 5, "b": 3})
                 ],
             ),
-            ModelMessage(
-                content=[Text(text="Done!")],
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Done!"),
                     ToolCall(
                         id="2",
                         name="complete_work",
@@ -205,8 +209,9 @@ async def test_runner_with_observation():
 
     llm = MockLLM(
         responses=[
-            ModelMessage(
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
                     ToolCall(
                         id="1",
                         name="complete_work",
@@ -248,8 +253,9 @@ async def test_runner_with_output_schema():
 
     llm = MockLLM(
         responses=[
-            ModelMessage(
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
                     ToolCall(
                         id="1",
                         name="complete_work",
@@ -286,17 +292,19 @@ async def test_runner_memory_compacting():
     # Iterations 1-3 should be summarized, 4-5 should be in full detail
     llm = MockLLM(
         responses=[
-            ModelMessage(
-                content=[Text(text=f"Iteration {i}")],
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text=f"Iteration {i}"),
                     ToolCall(id=str(i), name="add", arguments={"a": i, "b": 1})
                 ],
             )
             for i in range(1, 5)
         ]
         + [
-            ModelMessage(
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
                     ToolCall(
                         id="5",
                         name="complete_work",
@@ -358,20 +366,23 @@ async def test_runner_content_lifespan():
 
     llm = MockLLM(
         responses=[
-            ModelMessage(
-                content=[Text(text="Step 1")],
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Step 1"),
                     ToolCall(id="1", name="add", arguments={"a": 1, "b": 1})
                 ],
             ),
-            ModelMessage(
-                content=[Text(text="Step 2")],
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Step 2"),
                     ToolCall(id="2", name="add", arguments={"a": 2, "b": 2})
                 ],
             ),
-            ModelMessage(
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
                     ToolCall(
                         id="3",
                         name="complete_work",

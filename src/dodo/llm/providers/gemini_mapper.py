@@ -6,14 +6,8 @@ from typing import Any, Dict, List, Tuple, Optional, TYPE_CHECKING
 from google import genai
 from google.genai import types
 
-from dodo.llm.message import (
-    Message,
-    SystemMessage,
-    UserMessage,
-    ModelMessage,
-)
-from dodo.llm.content import Text, Image, ToolResult
-from dodo.llm.message import ToolCall
+from dodo.llm.message import Message, Role
+from dodo.llm.content import Text, Image, ToolResult, ToolCall
 
 if TYPE_CHECKING:
     from dodo.tools import Tool
@@ -34,13 +28,13 @@ def messages_to_gemini_content(
     system_instruction = None
 
     for msg in messages:
-        if isinstance(msg, SystemMessage):
+        if msg.role == Role.SYSTEM:
             # Extract system instruction
             if msg.content:
                 texts = [p.text for p in msg.content if isinstance(p, Text)]
                 system_instruction = "\n\n".join(texts)
 
-        elif isinstance(msg, UserMessage):
+        elif msg.role == Role.USER:
             parts = []
 
             if msg.content:
@@ -71,10 +65,10 @@ def messages_to_gemini_content(
             if parts:
                 gemini_messages.append(types.Content(role="user", parts=parts))
 
-        elif isinstance(msg, ModelMessage):
+        elif msg.role == Role.MODEL:
             parts = []
 
-            # Include text content if present
+            # Include text and tool calls from content
             if msg.content:
                 for content_part in msg.content:
                     if isinstance(content_part, Text):
@@ -86,16 +80,13 @@ def messages_to_gemini_content(
                                 mime_type=content_part.mime_type.value,
                             )
                         )
-
-            # Add tool calls as function call parts
-            if msg.tool_calls:
-                for tool_call in msg.tool_calls:
-                    parts.append(
-                        types.Part.from_function_call(
-                            name=tool_call.name,
-                            args=tool_call.arguments,
+                    elif isinstance(content_part, ToolCall):
+                        parts.append(
+                            types.Part.from_function_call(
+                                name=content_part.name,
+                                args=content_part.arguments,
+                            )
                         )
-                    )
 
             if parts:
                 gemini_messages.append(types.Content(role="model", parts=parts))
@@ -103,36 +94,29 @@ def messages_to_gemini_content(
     return gemini_messages, system_instruction
 
 
-def gemini_response_to_model_message(response) -> ModelMessage:
-    """Convert Gemini response to ModelMessage."""
-    tool_calls = []
+def gemini_response_to_message(response) -> Message:
+    """Convert Gemini response to Message."""
     content_parts = []
-    thoughts = None
 
     if response.candidates and response.candidates[0].content:
         for part in response.candidates[0].content.parts:
-            # Check for text content
+            # Check for text content (thoughts/reasoning)
             if hasattr(part, "text") and part.text:
-                # First text is treated as thoughts
-                if thoughts is None:
-                    thoughts = part.text
-                else:
-                    content_parts.append(Text(text=part.text))
+                content_parts.append(Text(text=part.text))
             # Check for function call
             elif hasattr(part, "function_call") and part.function_call:
                 fc = part.function_call
                 args = dict(fc.args) if fc.args else {}
-                tool_calls.append(
+                content_parts.append(
                     ToolCall(
                         name=fc.name,
                         arguments=args,
                     )
                 )
 
-    return ModelMessage(
-        content=content_parts if content_parts else None,
-        tool_calls=tool_calls if tool_calls else None,
-        thoughts=thoughts,
+    return Message(
+        role=Role.MODEL,
+        content=content_parts,
     )
 
 

@@ -1,7 +1,7 @@
 """Content types for messages."""
 
 import base64
-from typing import Optional, Union
+from typing import Optional, Union, Dict, Any
 from enum import Enum
 from pathlib import Path
 from pydantic import BaseModel
@@ -128,7 +128,7 @@ class ToolResultStatus(str, Enum):
 
 
 class ToolResult(Content):
-    """Result of tool execution - can be included in UserMessage content."""
+    """Result of tool execution."""
 
     tool_call_id: Optional[str] = None  # Match by ID if available
     name: str  # Tool name
@@ -144,3 +144,22 @@ class ToolResult(Content):
         if self.terminal:
             parts.append("terminal")
         return f"ToolResult({', '.join(parts)})"
+
+
+# =============================================================================
+# ToolCall
+# =============================================================================
+
+
+class ToolCall(Content):
+    """Tool call from model."""
+
+    id: Optional[str] = None  # OpenAI/Anthropic provide ID, Gemini doesn't
+    name: str
+    arguments: Dict[str, Any]
+
+    def __str__(self) -> str:
+        args_str = ", ".join(f"{k}={v}" for k, v in self.arguments.items())
+        if len(args_str) > 100:
+            args_str = args_str[:100] + "..."
+        return f"ToolCall({self.name}, {args_str})"

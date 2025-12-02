@@ -6,10 +6,10 @@ from typing import List, Optional, TYPE_CHECKING
 from google import genai
 from google.genai import types
 
-from dodo.llm import LLM, Message, ModelMessage
+from dodo.llm import LLM, Message
 from .gemini_mapper import (
     messages_to_gemini_content,
-    gemini_response_to_model_message,
+    gemini_response_to_message,
     build_tool_config,
 )
 
@@ -52,7 +52,7 @@ class Gemini(LLM):
         self,
         messages: List[Message],
         tools: List["Tool"],
-    ) -> ModelMessage:
+    ) -> Message:
         """Generate response with tool calling."""
         gemini_content, system_instruction = messages_to_gemini_content(messages)
         tool_config = build_tool_config(tools)
@@ -82,4 +82,4 @@ class Gemini(LLM):
                 f"Total: {usage.total_token_count}"
             )
 
-        return gemini_response_to_model_message(response)
+        return gemini_response_to_message(response)

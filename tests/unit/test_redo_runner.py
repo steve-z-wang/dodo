@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from dodo.runner import RedoRunner, Run, TaskResult, TaskStatus
 from dodo.tools import Tool
-from dodo.llm import ModelMessage, UserMessage, ToolCall, Text, ToolResult, ToolResultStatus
+from dodo.llm import Message, Role, ToolCall, Text, ToolResult, ToolResultStatus
 
 
 class TestParams(BaseModel):
@@ -46,13 +46,15 @@ async def test_redo_basic_replay():
         _result=TaskResult(status=TaskStatus.COMPLETED, feedback="Done"),
         action_log="- test_tool(value='hello')",
         messages=[
-            ModelMessage(
-                thoughts="Testing",
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Testing"),
                     ToolCall(name="test_tool", arguments={"value": "hello"}),
                 ],
             ),
-            UserMessage(
+            Message(
+                role=Role.USER,
                 content=[
                     ToolResult(
                         name="test_tool",
@@ -93,20 +95,22 @@ async def test_redo_multiple_tool_calls():
         _result=TaskResult(status=TaskStatus.COMPLETED, feedback="Done"),
         action_log="- test_tool multiple times",
         messages=[
-            ModelMessage(
-                thoughts="First",
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="First"),
                     ToolCall(name="test_tool", arguments={"value": "first"}),
                 ],
             ),
-            UserMessage(content=[ToolResult(name="test_tool", status=ToolResultStatus.SUCCESS)]),
-            ModelMessage(
-                thoughts="Second",
-                tool_calls=[
+            Message(role=Role.USER, content=[ToolResult(name="test_tool", status=ToolResultStatus.SUCCESS)]),
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Second"),
                     ToolCall(name="test_tool", arguments={"value": "second"}),
                 ],
             ),
-            UserMessage(content=[ToolResult(name="test_tool", status=ToolResultStatus.SUCCESS)]),
+            Message(role=Role.USER, content=[ToolResult(name="test_tool", status=ToolResultStatus.SUCCESS)]),
         ],
         task_description="Test",
         steps_used=2,
@@ -130,9 +134,10 @@ async def test_redo_tool_not_found():
         _result=TaskResult(status=TaskStatus.COMPLETED),
         action_log="",
         messages=[
-            ModelMessage(
-                thoughts="Test",
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Test"),
                     ToolCall(name="unknown_tool", arguments={"value": "test"}),
                 ],
             ),
@@ -163,9 +168,10 @@ async def test_redo_tool_execution_fails():
         _result=TaskResult(status=TaskStatus.COMPLETED),
         action_log="",
         messages=[
-            ModelMessage(
-                thoughts="Test",
-                tool_calls=[
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Test"),
                     ToolCall(name="test_tool", arguments={"value": "test"}),
                 ],
             ),
@@ -191,7 +197,7 @@ async def test_redo_empty_run():
         _result=TaskResult(status=TaskStatus.COMPLETED),
         action_log="",
         messages=[
-            UserMessage(content=[Text(text="No tool calls")]),
+            Message(role=Role.USER, content=[Text(text="No tool calls")]),
         ],
         task_description="Test",
         steps_used=0,
@@ -215,19 +221,21 @@ async def test_redo_extract_tool_calls():
         _result=TaskResult(status=TaskStatus.COMPLETED),
         action_log="",
         messages=[
-            UserMessage(content=[Text(text="User message")]),  # No tool calls
-            ModelMessage(
-                thoughts="Model 1",
-                tool_calls=[
+            Message(role=Role.USER, content=[Text(text="User message")]),  # No tool calls
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Model 1"),
                     ToolCall(name="test_tool", arguments={"value": "a"}),
                     ToolCall(name="test_tool", arguments={"value": "b"}),
                 ],
             ),
-            UserMessage(content=[ToolResult(name="test_tool", status=ToolResultStatus.SUCCESS)]),
-            ModelMessage(thoughts="Model 2", tool_calls=None),  # No tool calls
-            ModelMessage(
-                thoughts="Model 3",
-                tool_calls=[
+            Message(role=Role.USER, content=[ToolResult(name="test_tool", status=ToolResultStatus.SUCCESS)]),
+            Message(role=Role.MODEL, content=[Text(text="Model 2")]),  # No tool calls
+            Message(
+                role=Role.MODEL,
+                content=[
+                    Text(text="Model 3"),
                     ToolCall(name="test_tool", arguments={"value": "c"}),
                 ],
             ),

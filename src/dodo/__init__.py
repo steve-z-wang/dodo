@@ -25,18 +25,17 @@ from .llm import (
     LLM,
     Gemini,
     Message,
+    Role,
     Content,
     Text,
     Image,
     ToolResult,
     ToolResultStatus,
-    SystemMessage,
-    UserMessage,
-    ModelMessage,
+    ToolCall,
 )
 from .prompts import DEFAULT_SYSTEM_PROMPT
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 __all__ = [
     # Core
@@ -58,11 +57,10 @@ __all__ = [
     "Image",
     "ToolResult",
     "ToolResultStatus",
+    "ToolCall",
     # Message types
     "Message",
-    "SystemMessage",
-    "UserMessage",
-    "ModelMessage",
+    "Role",
     # Prompts
     "DEFAULT_SYSTEM_PROMPT",
 ]

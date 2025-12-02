@@ -6,9 +6,7 @@ from pydantic import BaseModel
 
 from dodo.llm import (
     Message,
-    SystemMessage,
-    UserMessage,
-    ModelMessage,
+    Role,
     Content,
     Text,
     ToolResult,
@@ -21,8 +19,8 @@ from dodo.prompts import DEFAULT_SYSTEM_PROMPT
 if TYPE_CHECKING:
     from dodo.llm import LLM
 
-# Type alias for message pairs (ModelMessage + UserMessage with tool results/observations)
-MessagePair = Tuple[ModelMessage, UserMessage]
+# Type alias for message pairs (model response + user response with tool results/observations)
+MessagePair = Tuple[Message, Message]
 
 
 class TaskRunner:
@@ -100,8 +98,8 @@ class TaskRunner:
             )
 
             self._logger.info(f"LLM response - Tools: {tool_names}")
-            if model_msg.thoughts:
-                self._logger.info(f"Thoughts: {model_msg.thoughts}")
+            if model_msg.text:
+                self._logger.info(f"Thoughts: {model_msg.text}")
 
             tool_results = await tool_registry.execute_tool_calls(
                 model_msg.tool_calls or []
@@ -110,9 +108,9 @@ class TaskRunner:
             # Get context after tool execution via observe callback
             observation = await self._observe()
 
-            # Combine tool results and observation into UserMessage content
+            # Combine tool results and observation into user response
             response_content: List[Content] = list(tool_results) + list(observation)
-            response_msg = UserMessage(content=response_content)
+            response_msg = Message(role=Role.USER, content=response_content)
             pairs.append((model_msg, response_msg))
 
             self._logger.info(f"Iteration {iteration + 1} - End")
@@ -183,8 +181,8 @@ class TaskRunner:
         user_content.extend(observation)
 
         return [
-            SystemMessage(content=[Text(text=self._system_prompt)]),
-            UserMessage(content=user_content),
+            Message(role=Role.SYSTEM, content=[Text(text=self._system_prompt)]),
+            Message(role=Role.USER, content=user_content),
         ]
 
     def _format_previous_runs(self, runs: List[Run]) -> str:
@@ -206,8 +204,8 @@ class TaskRunner:
 
         lines = []
         for model_msg, response_msg in pairs:
-            if model_msg.thoughts:
-                reasoning = model_msg.thoughts.strip()
+            if model_msg.text:
+                reasoning = model_msg.text.strip()
                 if "\n" not in reasoning:
                     lines.append(f"- {reasoning}")
                 else:
@@ -243,7 +241,8 @@ class TaskRunner:
             action_log = self._build_action_log(old_pairs)
             if action_log:
                 tool_messages.append(
-                    UserMessage(
+                    Message(
+                        role=Role.USER,
                         content=[
                             Text(text=f"Previous actions in this session:\n{action_log}")
                         ]
@@ -269,16 +268,16 @@ class TaskRunner:
         return session_start_messages + tool_messages
 
     def _filter_content_by_lifespan(
-        self, msg: UserMessage, distance_from_end: int
-    ) -> UserMessage:
+        self, msg: Message, distance_from_end: int
+    ) -> Message:
         """Filter content based on lifespan.
 
         Args:
-            msg: UserMessage to filter
+            msg: Message to filter
             distance_from_end: 0 = current iteration, 1 = previous, etc.
 
         Returns:
-            New UserMessage with filtered content
+            New Message with filtered content
         """
         if not msg.content:
             return msg
@@ -294,7 +293,8 @@ class TaskRunner:
             # Otherwise, skip (content is too old for its lifespan)
 
         # Return new message with filtered content
-        return UserMessage(
+        return Message(
+            role=msg.role,
             timestamp=msg.timestamp,
-            content=filtered_content if filtered_content else None,
+            content=filtered_content,
         )

@@ -1,96 +1,73 @@
-"""Message types for conversational LLM history with tool calling support."""
+"""Message type for conversational LLM history."""
 
-from typing import List, Optional, Dict, Any
+from typing import List
 from datetime import datetime
+from enum import Enum
 from pydantic import BaseModel, Field
 
-from .content import Content, Text, Image, ToolResult, ToolResultStatus
+from .content import Content, Text, Image, ToolResult, ToolCall
 
 
-class ToolCall(BaseModel):
-    """Tool call from LLM."""
+class Role(str, Enum):
+    """Message role."""
 
-    id: Optional[str] = None  # OpenAI/Anthropic provide ID, Gemini doesn't
-    name: str
-    arguments: Dict[str, Any]
-
-    def __str__(self) -> str:
-        args_str = ", ".join(f"{k}={v}" for k, v in self.arguments.items())
-        if len(args_str) > 100:
-            args_str = args_str[:100] + "..."
-        return f"ToolCall({self.name}, {args_str})"
+    SYSTEM = "system"
+    USER = "user"
+    MODEL = "model"
 
 
 class Message(BaseModel):
-    """Base message with automatic timestamp."""
+    """A message in the conversation history."""
 
+    role: Role
+    content: List[Content] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=datetime.now)
-    content: Optional[List[Content]] = None
 
+    @property
+    def text(self) -> str:
+        """Get all text content concatenated."""
+        texts = [c.text for c in self.content if isinstance(c, Text)]
+        return " ".join(texts)
 
-class SystemMessage(Message):
-    """System instruction message."""
+    @property
+    def images(self) -> List[Image]:
+        """Get all image content."""
+        return [c for c in self.content if isinstance(c, Image)]
 
-    def __str__(self) -> str:
-        if not self.content:
-            return "SystemMessage(empty)"
-        texts = [part.text for part in self.content if hasattr(part, "text")]
-        combined = " ".join(texts)
-        if len(combined) > 200:
-            combined = combined[:200] + "..."
-        return f"SystemMessage({combined})"
+    @property
+    def tool_calls(self) -> List[ToolCall]:
+        """Get all tool calls."""
+        return [c for c in self.content if isinstance(c, ToolCall)]
 
-
-class UserMessage(Message):
-    """User message with text/images."""
-
-    def __str__(self) -> str:
-        if not self.content:
-            return "UserMessage(empty)"
-        text_parts = [part.text for part in self.content if isinstance(part, Text)]
-        image_count = sum(1 for part in self.content if isinstance(part, Image))
-
-        text_str = " ".join(text_parts)
-        if len(text_str) > 200:
-            text_str = text_str[:200] + "..."
-
-        if image_count > 0:
-            return f"UserMessage(text={text_str}, images={image_count})"
-        return f"UserMessage({text_str})"
-
-
-class ModelMessage(Message):
-    """Model response with optional tool calls and reasoning."""
-
-    tool_calls: Optional[List[ToolCall]] = None
-    thoughts: Optional[str] = None  # Model's thinking/reasoning
+    @property
+    def tool_results(self) -> List[ToolResult]:
+        """Get all tool results."""
+        return [c for c in self.content if isinstance(c, ToolResult)]
 
     def __str__(self) -> str:
         parts = []
 
-        if self.thoughts:
-            thoughts_str = self.thoughts
-            if len(thoughts_str) > 100:
-                thoughts_str = thoughts_str[:100] + "..."
-            parts.append(f"thoughts={thoughts_str}")
+        # Text
+        if self.text:
+            text_str = self.text
+            if len(text_str) > 100:
+                text_str = text_str[:100] + "..."
+            parts.append(f"text={text_str}")
 
-        if self.content:
-            text_parts = [part.text for part in self.content if isinstance(part, Text)]
-            image_count = sum(1 for part in self.content if isinstance(part, Image))
+        # Images
+        if self.images:
+            parts.append(f"images={len(self.images)}")
 
-            if text_parts:
-                text_str = " ".join(text_parts)
-                if len(text_str) > 100:
-                    text_str = text_str[:100] + "..."
-                parts.append(f"text={text_str}")
-
-            if image_count > 0:
-                parts.append(f"images={image_count}")
-
+        # Tool calls
         if self.tool_calls:
             tool_names = [tc.name for tc in self.tool_calls]
-            parts.append(f"tools=[{', '.join(tool_names)}]")
+            parts.append(f"tool_calls=[{', '.join(tool_names)}]")
+
+        # Tool results
+        if self.tool_results:
+            result_names = [tr.name for tr in self.tool_results]
+            parts.append(f"tool_results=[{', '.join(result_names)}]")
 
         if parts:
-            return f"ModelMessage({', '.join(parts)})"
-        return "ModelMessage(empty)"
+            return f"Message({self.role.value}, {', '.join(parts)})"
+        return f"Message({self.role.value}, empty)"

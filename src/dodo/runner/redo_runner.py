@@ -3,8 +3,7 @@
 from typing import List, Callable, Awaitable
 
 from dodo.tools import Tool
-from dodo.llm import Content, ToolCall
-from dodo.llm.message import ModelMessage
+from dodo.llm import Content, ToolCall, Role
 from .run import Run
 
 
@@ -63,7 +62,7 @@ class RedoRunner:
         tool_calls = []
 
         for message in run.messages:
-            if isinstance(message, ModelMessage) and message.tool_calls:
+            if message.role == Role.MODEL and message.tool_calls:
                 tool_calls.extend(message.tool_calls)
 
         return tool_calls
